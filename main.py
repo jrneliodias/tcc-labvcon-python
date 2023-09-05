@@ -1,17 +1,19 @@
-from serialApp import serialApp
-import time
+from connections import *
+import streamlit as st
+import pandas as pd
 
-# Instanciar o objeto
-arduino = serialApp()
+st.write('### Componentes Seriais conectados:')
 
-#  Conectar a porta Serial ex.COM9
-arduino.updatePort()
-arduino.serialPort.port = arduino.portlist[0]
+portlist = get_ports()
+for port_info in portlist:
+    st.write(
+        f"Device: {port_info.device}, Description: {port_info.description}")
 
-arduino.serialPort.baudrate = '250000'
+option = st.selectbox(
+    '## Qual porta deseja conectar?',
+    [port_info.device for port_info in portlist])
 
-arduino.connectSerial()
-time.sleep(3)
+'You selected: ', option
 
-arduino.readSerial()
-print('terminou')
+if st.button('Conectar Arduino'):
+    connectSerialManual(option)
