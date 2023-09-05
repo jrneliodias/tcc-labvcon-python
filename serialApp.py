@@ -29,7 +29,7 @@ class serialApp():
 
     # Enviar Dados
     def sendSerial(self, data):
-        if (self.serialPOrt.isOpen()):
+        if (self.serialPort.isOpen):
             dataSend = str(self.data) + '\n'
             self.serialPort.write(dataSend.encode())
             self.serialPort.flushOutput()
