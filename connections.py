@@ -17,7 +17,7 @@ def findArduino(portsFound: list):
     return commPort
 
 
-def connectSerial():
+def connectSerial(commport):
 
     portlist = get_ports()
     commPort = findArduino(portlist)
@@ -26,4 +26,8 @@ def connectSerial():
     return arduinoData
 
 
-connectSerial()
+def connectSerialManual(commPort):
+
+    arduinoData = serial.Serial(port=commPort, baudrate=250000, timeout=1)
+    time.sleep(6)
+    return arduinoData
