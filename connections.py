@@ -33,10 +33,10 @@ def connectSerialManual(commPort):
     return arduinoData
 
 
-def sendToArduino(arduinoData, textToSend):
+def disconnectSerial(arduinoData):
+    arduinoData.close()
 
+
+def sendToArduino(arduinoData, textToSend):
     arduinoData.write(textToSend.encode())
     arduinoData.flush()
-    time.sleep(0.1)
-    dataRead = arduinoData.readline().decode().split('\r\n')
-    print(dataRead[0])

@@ -13,6 +13,7 @@ for i in range(5):
     if cmd == "q":
         break
     cmd = cmd + '\r'
+    actions = ['ON', 'OFF', 'ON', 'OFF']
     arduinoData.write(cmd.encode())
     arduinoData.flush()
     time.sleep(0.1)
