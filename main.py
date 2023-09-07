@@ -15,5 +15,21 @@ option = st.selectbox(
 
 'You selected: ', option
 
+if 'connected' not in st.session_state:
+    st.session_state.connected = {}
+
 if st.button('Conectar Arduino'):
-    connectSerialManual(option)
+    arduinoData = connectSerialManual(option)
+    st.session_state.connected['arduinoData'] = arduinoData
+
+textToSend = st.text_input('Send to Serial:')
+
+if st.button('Enviar'):
+    arduinoData = st.session_state.connected['arduinoData']
+    actions = ['ON', 'OFF', 'ON', 'OFF']
+    for action in actions:
+        arduinoData.write(action.encode())
+        arduinoData.flush()
+
+        dataRead, *_ = arduinoData.readline().decode().split('\r\n')
+    st.write(dataRead)

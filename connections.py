@@ -31,3 +31,12 @@ def connectSerialManual(commPort):
     arduinoData = serial.Serial(port=commPort, baudrate=250000, timeout=1)
     time.sleep(6)
     return arduinoData
+
+
+def sendToArduino(arduinoData, textToSend):
+
+    arduinoData.write(textToSend.encode())
+    arduinoData.flush()
+    time.sleep(0.1)
+    dataRead = arduinoData.readline().decode().split('\r\n')
+    print(dataRead[0])
