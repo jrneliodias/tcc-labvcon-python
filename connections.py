@@ -1,6 +1,7 @@
 import time
 import serial
 from serial.tools.list_ports import comports
+import streamlit as st
 
 
 def get_ports():
@@ -34,9 +35,42 @@ def connectSerialManual(commPort):
 
 
 def disconnectSerial(arduinoData):
-    arduinoData.close()
+    arduinoData.close
 
 
 def sendToArduino(arduinoData, textToSend):
+    if '\r' not in textToSend:
+        textToSend += '\r'
     arduinoData.write(textToSend.encode())
     arduinoData.flush()
+
+
+def readFromArduino(arduinoData, ts):
+    time.sleep(ts)
+    dataRead, *_ = arduinoData.readline().decode().split('\r\n')
+    return dataRead
+
+
+def serialPortValidationToConnect(port_option):
+    if not port_option:
+        return st.error('Não há porta serial para conectar')
+
+    if 'arduinoData' not in st.session_state.connected:
+        with st.spinner('Processing...'):
+            arduinoData = connectSerialManual(port_option)
+            st.session_state.connected['arduinoData'] = arduinoData
+        st.success("Conectado!")
+    else:
+        st.write('O arduino já está conectado.')
+
+
+def serialPortValidationToDisconnect():
+    if 'arduinoData' in st.session_state.connected:
+        arduinoData = st.session_state.connected['arduinoData']
+        with st.spinner('Processing...'):
+            time.sleep(2)
+            disconnectSerial(arduinoData)
+            st.session_state.connected = {}
+        st.success("Desconectado!")
+    else:
+        st.warning('O arduino já está desconectado.')
