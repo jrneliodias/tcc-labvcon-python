@@ -27,11 +27,28 @@ def sidebarMenu():
 
     textToSend = st.text_input('Send to Serial:')
 
+    col1, col2 = st.columns(2)
+    with col1:
+        sampling_time_input = st.number_input(
+            'Tempo de amostragem:',
+            value=0.1,
+            min_value=0.005)
+        if sampling_time_input:
+            st.session_state.sampling_time = sampling_time_input
+
+    with col2:
+
+        samples_number = st.number_input(
+            'Quantidade de amostras:', value=100, step=10, min_value=1)
+
+        if samples_number:
+            st.session_state.samples_number = samples_number
+
     if st.button('Enviar'):
         if 'arduinoData' in st.session_state.connected:
             arduinoData = st.session_state.connected['arduinoData']
             sendToArduino(arduinoData, textToSend)
-            dataRead = readFromArduino(arduinoData, 0.1)
+            dataRead = readFromArduino(arduinoData)
             st.write(dataRead)
         else:
             st.warning('Não há dispositivos conectados.')
@@ -41,7 +58,8 @@ def sidebarMenu():
             arduinoData = st.session_state.connected['arduinoData']
             st.session_state.sensor = dict()
             sensor = st.session_state.sensor
-            for i in range(800):
+            for i in range(500):
+
                 sendToArduino(arduinoData, 'ON')
                 dataRead = readFromArduino(arduinoData, 0)
                 current_timestamp = datetime.datetime.now()
