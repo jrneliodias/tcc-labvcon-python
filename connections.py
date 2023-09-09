@@ -45,7 +45,8 @@ def sendToArduino(arduinoData, textToSend):
     arduinoData.flush()
 
 
-def readFromArduino(arduinoData, ts):
+def readFromArduino(arduinoData):
+    ts = st.session_state.sampling_time
     time.sleep(ts)
     dataRead, *_ = arduinoData.readline().decode().split('\r\n')
     return dataRead
