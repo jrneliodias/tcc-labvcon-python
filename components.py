@@ -34,3 +34,16 @@ def sidebarMenu():
             st.write(dataRead)
         else:
             st.warning('Não há dispositivos conectados.')
+
+    if st.button('Receber Dados'):
+        if 'arduinoData' in st.session_state.connected:
+            arduinoData = st.session_state.connected['arduinoData']
+            st.session_state.sensor = 800*[0]
+            sensor = st.session_state.sensor
+            for i in range(800):
+                sendToArduino(arduinoData, 'ON')
+                dataRead = readFromArduino(arduinoData, 0.1)
+                sensor[i] = float(dataRead)
+            st.write(dataRead)
+        else:
+            st.warning('Não há dispositivos conectados.')

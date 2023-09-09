@@ -8,13 +8,16 @@ arduinoData = serial.Serial(port=portlist[0], baudrate=250000, timeout=1)
 
 time.sleep(6)
 
-for i in range(5):
+
+def createInput():
     cmd = input('Please Enter Your command: ')
-    if cmd == "q":
-        break
-    cmd = cmd + '\r'
+    cmd = + '\r'
+    return cmd
+
+
+for i in range(5):
     actions = ['ON', 'OFF', 'ON', 'OFF']
-    arduinoData.write(cmd.encode())
+    arduinoData.write(actions[i].encode())
     arduinoData.flush()
     time.sleep(0.1)
     dataRead = arduinoData.readline().decode().split('\r\n')

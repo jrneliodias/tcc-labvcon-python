@@ -15,6 +15,8 @@ st.set_page_config(
 if 'connected' not in st.session_state:
     st.session_state.connected = {}
 
+if 'sensor' not in st.session_state:
+    st.session_state.sensor = {}
 
 st.header('LABVCON - Laboratório Virtual de Controle', divider='rainbow')
 selectMethod = option_menu(
@@ -31,3 +33,6 @@ selectMethod = option_menu(
 with st.sidebar:
     sidebarMenu()
     st.session_state
+
+
+st.line_chart(data=st.session_state.sensor)
