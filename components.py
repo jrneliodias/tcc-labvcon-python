@@ -1,6 +1,7 @@
 from connections import *
 import streamlit as st
 import pandas as pd
+import datetime
 
 
 def sidebarMenu():
@@ -38,12 +39,13 @@ def sidebarMenu():
     if st.button('Receber Dados'):
         if 'arduinoData' in st.session_state.connected:
             arduinoData = st.session_state.connected['arduinoData']
-            st.session_state.sensor = 800*[0]
+            st.session_state.sensor = dict()
             sensor = st.session_state.sensor
             for i in range(800):
                 sendToArduino(arduinoData, 'ON')
-                dataRead = readFromArduino(arduinoData, 0.1)
-                sensor[i] = float(dataRead)
+                dataRead = readFromArduino(arduinoData, 0)
+                current_timestamp = datetime.datetime.now()
+                sensor[str(current_timestamp)] = float(dataRead)
             st.write(dataRead)
         else:
             st.warning('Não há dispositivos conectados.')
