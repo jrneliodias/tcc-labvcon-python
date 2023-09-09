@@ -58,12 +58,33 @@ def sidebarMenu():
             arduinoData = st.session_state.connected['arduinoData']
             st.session_state.sensor = dict()
             sensor = st.session_state.sensor
-            for i in range(500):
 
-                sendToArduino(arduinoData, 'ON')
-                dataRead = readFromArduino(arduinoData, 0)
-                current_timestamp = datetime.datetime.now()
-                sensor[str(current_timestamp)] = float(dataRead)
-            st.write(dataRead)
+            start_time = time.time()
+            interation = 0
+            sampling_time = st.session_state.sampling_time
+            progress_text = "Operation in progress. Please wait."
+            my_bar = st.progress(0, text=progress_text)
+
+            while interation < samples_number:
+                current_time = time.time()
+                if current_time - start_time > sampling_time:
+                    start_time = current_time
+                    sendToArduino(arduinoData, 'ON')
+                    dataRead = readFromArduino(arduinoData)
+                    current_timestamp = datetime.datetime.now()
+                    sensor[str(current_timestamp)] = float(dataRead)
+                    interation += 1
+
+                    percent_complete = interation * 1 / samples_number
+
+                    my_bar.progress(percent_complete, text=progress_text)
+
+            # for i in range(samples_number):
+
+            #     sendToArduino(arduinoData, 'ON')
+            #     dataRead = readFromArduino(arduinoData)
+            #     current_timestamp = datetime.datetime.now()
+            #     sensor[str(current_timestamp)] = float(dataRead)
+
         else:
             st.warning('Não há dispositivos conectados.')
