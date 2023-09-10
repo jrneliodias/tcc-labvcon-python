@@ -1,12 +1,5 @@
-from connections import *
-from mainSideBar import *
-from session_state import *
-import streamlit as st
-import pandas as pd
-from streamlit_option_menu import option_menu
-from datetime import datetime, timedelta
-import requests
-import json
+from controladores_views.controller_imports import *
+
 
 st.set_page_config(
     page_title="Ex-stream-ly Cool App",
@@ -15,6 +8,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 
 )
+
+loadSessionStates()
 
 st.header('LABVCON - Laboratório Virtual de Controle', divider='rainbow')
 selectMethod = option_menu(
@@ -27,35 +22,35 @@ selectMethod = option_menu(
 )
 
 
+case_functions = {
+    "PID": pid_Controller,
+    "IMC": imc_Controller,
+    "GMV": gmv_Controller,
+    "GPC": gpc_Controller,
+}
+
+case_functions[selectMethod]()
+
+
 # SideBar
 with st.sidebar:
     mainSidebarMenu()
     st.session_state
 
-datetimeList = list(st.session_state.sensor.keys())
-
-# Define the format of your date string
-date_format = "%Y-%m-%d %H:%M:%S.%f"
-
-# Parse the string into a datetime object
-date_object = [datetime.strptime(datetimeElement, date_format)
-               for datetimeElement in datetimeList]
-
-date_object_hour = [datetime.strptime(datetimeElement, date_format)
-                    for datetimeElement in datetimeList]
+##########################################################################
 
 sensor_dict = st.session_state.sensor
 
-sensor_formatted_dict = {
+sensor_formatted2Hours_dict = {
     key.split()[1]: value
     for key, value in sensor_dict.items()
 }
 
+st.line_chart(data=sensor_formatted2Hours_dict)
 
-st.line_chart(data=sensor_formatted_dict)
-
-
+#########################################################################
 col1, col2 = st.columns(2)
+date_object = keys2DatetimeObj(sensor_dict)
 
 with col1:
 
