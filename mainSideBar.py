@@ -43,30 +43,41 @@ def mainSidebarMenu():
             st.session_state.samples_number = samples_number
 
     if st.button('Receber Dados'):
-        if 'arduinoData' in st.session_state.connected:
-            arduinoData = st.session_state.connected['arduinoData']
-            st.session_state.sensor = dict()
-            sensor = st.session_state.sensor
+        enviarDados('ON')
 
-            start_time = time.time()
-            interation = 0
-            sampling_time = st.session_state.sampling_time
-            progress_text = "Operation in progress. Please wait."
-            my_bar = st.progress(0, text=progress_text)
 
-            while interation < samples_number:
-                current_time = time.time()
-                if current_time - start_time > sampling_time:
-                    start_time = current_time
-                    sendToArduino(arduinoData, 'ON')
-                    dataRead = readFromArduino(arduinoData)
-                    current_timestamp = datetime.datetime.now()
-                    sensor[str(current_timestamp)] = float(dataRead)
-                    interation += 1
+def enviarDados(controlSignal: str = '0,0'):
+    if 'sensor' not in st.session_state:
+        return st.error('Não há dispositivos conectados.')
 
-                    percent_complete = interation * 1 / samples_number
+    # Receber o objeto arduino da sessão
+    arduinoData = st.session_state.connected['arduinoData']
 
-                    my_bar.progress(percent_complete, text=progress_text)
+    # limpar os valores anteriores do sensor
+    st.session_state.sensor = dict()
+    sensor = st.session_state.sensor
 
-        else:
-            st.warning('Não há dispositivos conectados.')
+    # inicializar  o timer
+    start_time = time.time()
+    interation = 0
+
+    # Receber os valores de tempo de amostragem e número de amostras da sessão
+    sampling_time = st.session_state.sampling_time
+    samples_number = st.session_state.samples_number
+
+    # Inicializar a barra de progresso
+    progress_text = "Operation in progress. Please wait."
+    my_bar = st.progress(0, text=progress_text)
+
+    while interation < samples_number:
+        current_time = time.time()
+        if current_time - start_time > sampling_time:
+            start_time = current_time
+            sendToArduino(arduinoData, controlSignal)
+            dataRead = readFromArduino(arduinoData)
+            current_timestamp = datetime.datetime.now()
+            sensor[str(current_timestamp)] = float(dataRead)
+            interation += 1
+
+            percent_complete = interation * 1 / samples_number
+            my_bar.progress(percent_complete, text=progress_text)
