@@ -9,6 +9,7 @@ st.set_page_config(
 
 )
 
+add_logo("images/app_logo2.png", height=150)
 loadSessionStates()
 
 st.header('LABVCON - Laboratório Virtual de Controle', divider='rainbow')
@@ -21,6 +22,16 @@ selectMethod = option_menu(
 
 )
 
+##########################################################################
+
+# SideBar
+with st.sidebar:
+    mainSidebarMenu()
+    with st.expander("Session States:"):
+        st.session_state
+
+##########################################################################
+
 
 case_functions = {
     "PID": pid_Controller,
@@ -31,48 +42,4 @@ case_functions = {
 
 case_functions[selectMethod]()
 
-
-# SideBar
-with st.sidebar:
-    mainSidebarMenu()
-    st.session_state
-
 ##########################################################################
-
-sensor_dict = st.session_state.sensor
-
-sensor_formatted2Hours_dict = {
-    key.split()[1]: value
-    for key, value in sensor_dict.items()
-}
-
-st.line_chart(data=sensor_formatted2Hours_dict)
-
-#########################################################################
-col1, col2 = st.columns(2)
-date_object = keys2DatetimeObj(sensor_dict)
-
-with col1:
-
-    time_interval = [(date_object[i] - date_object[i-1]).total_seconds()
-                     for i in range(1, len(date_object))]
-
-    st.line_chart(time_interval)
-
-with col2:
-
-    if time_interval:
-
-        '### Tempo da simulação'
-        if date_object:
-            time = date_object[-1] - date_object[0]
-            st.write(f'{time.total_seconds()} seconds')
-
-        'Média do intervalo'
-        mean_value = sum(time_interval) / len(time_interval)
-        mean_value
-
-        'Média do erro'
-        mean_error = sum(abs(x - mean_value)
-                         for x in time_interval) / len(time_interval)
-        mean_error/st.session_state.sampling_time
