@@ -1,5 +1,6 @@
 from controladores_views.controller_imports import *
 
+loadSessionStates()
 
 st.set_page_config(
     page_title="Ex-stream-ly Cool App",
@@ -10,7 +11,6 @@ st.set_page_config(
 )
 
 add_logo("images/app_logo2.png", height=150)
-loadSessionStates()
 
 st.header('LABVCON - Laboratório Virtual de Controle', divider='rainbow')
 selectMethod = option_menu(
