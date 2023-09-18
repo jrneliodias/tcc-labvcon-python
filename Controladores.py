@@ -8,16 +8,26 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 
+
 )
+
+# title_alignment = """
+# <style>
+# .css-z5fcl4 {3
+#   padding:2rem
+# }
+# </style>
+# """
+# st.markdown(title_alignment, unsafe_allow_html=True)
 
 add_logo("images/app_logo2.png", height=150)
 
-st.header('LABVCON - Laboratório Virtual de Controle', divider='rainbow')
+st.title('LABVCON - Laboratório Virtual de Controle')
 selectMethod = option_menu(
     menu_title=None,
-    options=['PID', 'IMC', 'GMV', 'GPC'],
+    options=['IMC', 'GMV', 'GPC'],
     orientation='horizontal',
-    icons=['diagram-2', 'ui-radios-grid',
+    icons=['ui-radios-grid',
            'app', 'command'],
 
 )
@@ -34,8 +44,8 @@ with st.sidebar:
 
 
 case_functions = {
-    "PID": pid_Controller,
-    "IMC": imc_Controller,
+
+    "IMC": imc_Controller_Interface,
     "GMV": gmv_Controller,
     "GPC": gpc_Controller,
 }

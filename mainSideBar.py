@@ -5,6 +5,7 @@ import datetime
 
 
 def mainSidebarMenu():
+    st.write('## Conexão Serial')
     st.write('#### Componentes Seriais Encontrados:')
 
     portlist = get_ports()
@@ -18,13 +19,13 @@ def mainSidebarMenu():
 
     col11, col12 = st.columns(2)
     with col11:
-        if st.button('Conectar'):
+        if st.button('Conectar', type='primary'):
             serialPortValidationToConnect(port_option)
 
     with col12:
         if st.button('Desconectar'):
             serialPortValidationToDisconnect()
-
+    st.divider()
     col1, col2 = st.columns(2)
     with col1:
         sampling_time_input = st.number_input(
