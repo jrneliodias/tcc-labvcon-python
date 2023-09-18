@@ -60,7 +60,7 @@ def get_sample_position(sampling_time, samples_number, time_instant):
 
 def imc_Controller_Interface():
 
-    st.header('Internal Model Control (IMC)')
+    st.header('Internal Model Control (IMC) - Two Input Single Output (TISO)')
 
     graphics_col, imc_config_col = st.columns([0.7, 0.3])
 
@@ -116,10 +116,10 @@ def imc_Controller_Interface():
             col24, col25 = st.columns(2)
             with col24:
                 imc_mr_tau_mf1 = st.number_input(
-                    '$\\tau_1$', value=0.9, step=0.1, min_value=0.0, max_value=1.0, key='imc_mr_tau_mf1')
+                    '$\\tau_1$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='imc_mr_tau_mf1')
             with col25:
                 imc_mr_tau_mf2 = st.number_input(
-                    '$\\tau_2$', value=0.9, step=0.1, min_value=0.0, max_value=1.0, key='imc_mr_tau_mf2')
+                    '$\\tau_2$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='imc_mr_tau_mf2')
 
             if st.button('Receber Dados', type='primary', key='imc_multiples_setpoint_button'):
                 imcControlProcess(imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,
@@ -210,10 +210,12 @@ def imcControlProcess(imc_multiple_reference1, imc_multiple_reference2, imc_mult
     a1m2 = Am2[1]
 
     # Close Loop Tau Calculation
-    tau_mf1 = ajuste1*tausmith1
+    # tau_mf1 = ajuste1*tausmith1
+    tau_mf1 = imc_mr_tau_mf1
     alpha1 = exp(-sampling_time/tau_mf1)
 
-    tau_mf2 = ajuste2*tausmith2
+    # tau_mf2 = ajuste2*tausmith2
+    tau_mf2 = imc_mr_tau_mf1
     alpha2 = exp(-sampling_time/tau_mf2)
 
     # Receber o objeto arduino da sessão
@@ -255,10 +257,10 @@ def imcControlProcess(imc_multiple_reference1, imc_multiple_reference2, imc_mult
 
             # Control Signal
             control_signal_1[interation] = alpha1*control_signal_1[interation-1] + ((1-alpha1)/b0m1)*erro1[interation-1] + \
-                a1m1*((1-alpha1)/b0m1)*erro1[interation-2]
+                                            a1m1*((1-alpha1)/b0m1)*erro1[interation-2]
 
             control_signal_2[interation] = alpha2*control_signal_2[interation-1] + ((1-alpha2)/b0m2)*erro2[interation-1] + \
-                a1m2*((1-alpha2)/b0m2)*erro2[interation-2]
+                                            a1m2*((1-alpha2)/b0m2)*erro2[interation-2]
 
             # Control Signal Saturation
             control_signal_1[interation] = max(
