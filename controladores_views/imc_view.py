@@ -92,16 +92,16 @@ def imc_Controller_Interface():
             with col23:
 
                 imc_multiple_reference3 = st.number_input(
-                    'Referência 3:', value=30, step=1, min_value=0, max_value=90, key='imc_multiple_reference3')
+                    'Referência 3:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='imc_multiple_reference3')
 
             with col22:
                 imc_multiple_reference2 = st.number_input(
-                    'Referência 2:', value=30, step=1, min_value=0, max_value=90,
+                    'Referência 2:', value=30.0, step=1.0, min_value=0.0, max_value=90.0,
                     key='imc_multiple_reference2')
 
             with col21:
                 imc_multiple_reference1 = st.number_input(
-                    'Referência:', value=30, step=1, min_value=0, max_value=90, key='imc_multiple_reference1')
+                    'Referência:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='imc_multiple_reference1')
 
             changeReferenceCol1, changeReferenceCol2 = st.columns(2)
 
