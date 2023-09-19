@@ -49,7 +49,7 @@ def sidebarMenu():
             arduinoData = st.session_state.connected['arduinoData']
             sendToArduino(arduinoData, textToSend)
             dataRead = readFromArduino(arduinoData)
-            st.write(dataRead)
+            st.write(f'## Resposta: {dataRead}')
         else:
             st.warning('Não há dispositivos conectados.')
 
@@ -69,7 +69,7 @@ def sidebarMenu():
                 current_time = time.time()
                 if current_time - start_time > sampling_time:
                     start_time = current_time
-                    sendToArduino(arduinoData, 'ON')
+                    sendToArduino(arduinoData, textToSend)
                     dataRead = readFromArduino(arduinoData)
                     current_timestamp = datetime.datetime.now()
                     sensor[str(current_timestamp)] = float(dataRead)

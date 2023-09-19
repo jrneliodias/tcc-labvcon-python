@@ -25,3 +25,6 @@ def loadSessionStates():
 
     if 'control_signal_2' not in st.session_state.controller_parameters:
         st.session_state.controller_parameters['control_signal_2'] = {}
+        
+    if 'reference_input' not in st.session_state.controller_parameters:
+        st.session_state.controller_parameters['reference_input'] = {}

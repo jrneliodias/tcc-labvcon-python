@@ -12,8 +12,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 
 )
+loadSessionStates()
 
-st.header('LABVCON - Laboratório Virtual de Controle', divider='rainbow')
+st.title('LABVCON - Laboratório Virtual de Controle')
+st.header('Teste da comunicação Serial', divider='rainbow')
 
 
 # SideBar

@@ -30,7 +30,7 @@ def connectSerial(commport):
 def connectSerialManual(commPort):
 
     arduinoData = serial.Serial(port=commPort, baudrate=250000, timeout=1)
-    time.sleep(6)
+    
     return arduinoData
 
 
