@@ -5,11 +5,12 @@ from control.matlab import tf, c2d, tfdata
 from numpy import exp, ones, zeros
 from connections import *
 import datetime
+from session_state import get_session_variable
 
 
 def datetime_obj_to_elapsed_time():
 
-    sensor_data_dict = st.session_state.sensor
+    sensor_data_dict = get_session_variable('process_output_sensor')
     date_object = keys2DatetimeObj(sensor_data_dict)
 
     time_interval = [0] + [(date_object[i] - date_object[0]).total_seconds()
@@ -25,75 +26,12 @@ def datetime_obj_to_elapsed_time():
 
     return elapsed_time_in_sec
 
-
-# def imc_Controller_Interface():
-
-#     st.header('Controle IMC')
-
-#     col1, col2 = st.columns([0.7, 0.3])
-
-#     with col2:
-
-#         tab1, tab2 = st.tabs(["Única Referência", "Múltiplas Referências"])
-#         with tab1:
-#             single_2reference = st.number_input(
-#                 'Referência:', value=50, step=1, min_value=0, max_value=90, key='single_reference_imc')
-#         with tab2:
-#             col21, col22, col23 = st.columns(3)
-#             with col21:
-#                 reference = st.number_input(
-#                     'Referência:', value=50, step=1, min_value=0, max_value=90, key='reference1_imc')
-
-#             with col22:
-#                 reference2 = st.number_input(
-#                     'Referência 2:', value=50, step=1, min_value=0, max_value=90,
-#                     key='reference2_imc')
-
-#             with col23:
-#                 reference3 = st.number_input(
-#                     'Referência 3:', value=50, step=1, min_value=0, max_value=90, key='reference3_imc')
-
-#         if st.button('Receber Dados'):
-#             imcControlProcess()
-
-#     with col1:
-
-#         sensor_data_with_elapsed_time = datetime_obj_to_elapsed_time()
-
-#         st.line_chart(data=sensor_data_with_elapsed_time, height=500)
-
-import streamlit as st
-import pandas as pd
-from formatterInputs import *
-from control.matlab import tf, c2d, tfdata
-from numpy import exp, ones, zeros
-from connections import *
-import datetime
-
-
-def datetime_obj_to_elapsed_time():
-
-    sensor_data_dict = st.session_state.sensor
-    date_object = keys2DatetimeObj(sensor_data_dict)
-
-    time_interval = [0] + [(date_object[i] - date_object[0]).total_seconds()
-                           for i in range(1, len(date_object))]
-
-    # sensor_formatted2Hours_dict = {
-    #     key.split()[1]: value
-    #     for key, value in sensor_dict.items()
-    # }
-
-    elapsed_time_in_sec = {time_interval[i]: sensor_data_dict[key]
-                           for i, key in enumerate(sensor_data_dict)}
-
-    return elapsed_time_in_sec
 
 
 def calculate_time_limit():
     # Receber os valores de tempo de amostragem e número de amostras da sessão
-    sampling_time = st.session_state.sampling_time
-    samples_number = st.session_state.samples_number
+    sampling_time = st.session_state.controller_parameters['sampling_time']
+    samples_number = st.session_state.controller_parameters['samples_number']
     time_max_value = samples_number*sampling_time
     return time_max_value
 
@@ -153,40 +91,39 @@ def imc_Controller_Interface():
                 col21, col22, col23 = st.columns(3)
                 with col23:
 
-                    imc_multiple_reference3 = st.number_input(
+                    imc_siso_multiple_reference3 = st.number_input(
                         'Referência 3:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='siso_imc_multiple_reference3')
 
                 with col22:
-                    imc_multiple_reference2 = st.number_input(
+                    imc_siso_multiple_reference2 = st.number_input(
                         'Referência 2:', value=30.0, step=1.0, min_value=0.0, max_value=90.0,
                         key='siso_imc_multiple_reference2')
 
                 with col21:
-                    imc_multiple_reference1 = st.number_input(
+                    imc_siso_multiple_reference1 = st.number_input(
                         'Referência 1:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='siso_imc_multiple_reference1')
 
                 changeReferenceCol1, changeReferenceCol2 = st.columns(2)
 
                 with changeReferenceCol2:
-                    change_ref_instant3 = st.number_input(
+                    siso_change_ref_instant3 = st.number_input(
                         'Instante da referência 3 (s):', value=calculate_time_limit()/2, step=0.1, min_value=0.0, max_value=calculate_time_limit(), key='siso_change_ref_instant3')
 
                 with changeReferenceCol1:
-                    change_ref_instant2 = st.number_input(
-                        'Instante da referência 2 (s):', value=2.0, step=1.0, min_value=0.0, max_value=change_ref_instant3, key='siso_change_ref_instant2')
+                    siso_change_ref_instant2 = st.number_input(
+                        'Instante da referência 2 (s):', value=2.0, step=1.0, min_value=0.0, max_value=siso_change_ref_instant3, key='siso_change_ref_instant2')
                 
             imc_sr_tau_mf1 = st.number_input(
                         'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, max_value=1.0, key='imc_sr_tau_mf1')
             
-            if st.button('Iniciar', type='primary', key='imc_single_setpoint_button'):
+            if st.button('Iniciar', type='primary', key='imc_siso_button'):
                 if reference_number == 'Única':
                     imcControlProcessSISO(imc_sr_tau_mf1, imc_single_reference, imc_single_reference, imc_single_reference
                                             )
                     
                 else:
-                    imcControlProcessTISO(imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,
-                                            change_ref_instant2, change_ref_instant3,
-                                            imc_sr_tau_mf1)
+                    imcControlProcessSISO(imc_sr_tau_mf1, imc_siso_multiple_reference1, imc_siso_multiple_reference2, imc_siso_multiple_reference3,
+                                          siso_change_ref_instant2,siso_change_ref_instant3)
 
         with mimoSystemTab:
             col21, col22, col23 = st.columns(3)
@@ -542,8 +479,8 @@ def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple
                       change_ref_instant2 = 1, change_ref_instant3 = 1):
 
     # Receber os valores de tempo de amostragem e número de amostras da sessão
-    sampling_time = st.session_state.sampling_time
-    samples_number = st.session_state.samples_number
+    sampling_time = st.session_state.controller_parameters['sampling_time']
+    samples_number = st.session_state.controller_parameters['samples_number']
 
     # IMC Controller Project
 
@@ -562,6 +499,7 @@ def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple
     reference_input = imc_multiple_reference1*ones(samples_number)
     reference_input[instant_sample_2:instant_sample_3] = imc_multiple_reference2
     reference_input[instant_sample_3:] = imc_multiple_reference3
+    
     st.session_state.controller_parameters['reference_input'] = reference_input
 
     # taumf1 e taumf2 Ajusts
