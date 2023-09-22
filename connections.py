@@ -36,6 +36,8 @@ def connectSerialManual(commPort):
 
 def disconnectSerial(arduinoData):
     arduinoData.close
+    arduinoData.__del__()
+
 
 
 def sendToArduino(arduinoData, textToSend):
