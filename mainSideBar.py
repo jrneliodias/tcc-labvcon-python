@@ -14,11 +14,15 @@ def mainSidebarMenu():
     port_option = st.selectbox(
         'Qual porta deseja conectar?',
         [port_info.device for port_info in portlist])
+    
+    baudrate_connection = st.selectbox(
+        'Baudrate:',
+        [9600,115200,250000],index=2)
 
     col11, col12 = st.columns(2)
     with col11:
         if st.button('Conectar', type='primary'):
-            serialPortValidationToConnect(port_option)
+            serialPortValidationToConnect(port_option,baudrate_connection)
 
     with col12:
         if st.button('Desconectar'):

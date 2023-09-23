@@ -27,10 +27,10 @@ def connectSerial(commport):
     return arduinoData
 
 
-def connectSerialManual(commPort):
+def connectSerialManual(commPort,baudrate):
 
-    arduinoData = serial.Serial(port=commPort, baudrate=250000, timeout=1)
-    
+    arduinoData = serial.Serial(port=commPort, baudrate=baudrate, timeout=1)
+    time.sleep(2)
     return arduinoData
 
 
@@ -54,13 +54,13 @@ def readFromArduino(arduinoData):
     return dataRead
 
 
-def serialPortValidationToConnect(port_option):
+def serialPortValidationToConnect(port_option,baudrate_connection):
     if not port_option:
         return st.error('Não há porta serial para conectar')
 
     if 'arduinoData' not in st.session_state.connected:
         with st.spinner('Processing...'):
-            arduinoData = connectSerialManual(port_option)
+            arduinoData = connectSerialManual(port_option,baudrate_connection)
             st.session_state.connected['arduinoData'] = arduinoData
         st.success("Conectado!")
     else:
