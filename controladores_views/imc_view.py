@@ -222,7 +222,8 @@ def coefficients_validations(coeff_string):
     if  coeff_string == '':
         return None
     if not validateFloatInput(coeff_string):
-        return st.error('Insira um valor válido')
+        return st.error('''Insira valores decimais separados por vírgula.     
+                        ex:  0.9 , 0.134''')
 
 def plot_chart_validation(plot_variable,y:str,height= 200, x = 'Time (s)'):
     if plot_variable is None:
