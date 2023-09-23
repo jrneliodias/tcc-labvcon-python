@@ -93,17 +93,29 @@ def imc_Controller_Interface():
     with imc_config_col:
         st.write('### Configurações do Controlador')
 
-        sisoSystemTab, mimoSystemTab = st.tabs(
-            ["SISO", "MIMO"])
+        sisoSystemTab, mimoSystemTab = st.tabs(["SISO", "MIMO"])
             #["Única Referência", "Múltiplas Referências"])
         
         with sisoSystemTab:
             
             transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='transfer_function_type')
             
-            num_coeff = st.text_input('Coeficientes do **Numerador** da Função de Transferência do Modelo:',key='siso_imc_num_coeff')
-            den_coeff = st.text_input('Coeficientes do **Denominador** da Função de Transferência do Modelo:',key='tiso_imc_den_coeff')
+            help_text = 'Valores decimais como **0.9** ou **0.1, 0.993**. Para múltiplos valores, vírgula é necessário.'
+            num_coeff = st.text_input('Coeficientes do **Numerador** da Função de Transferência do Modelo:',key='siso_imc_num_coeff',help=help_text,placeholder='0.994')
             
+            coefficients_validations(num_coeff)
+                
+            den_coeff = st.text_input('Coeficientes do **Denominador** da Função de Transferência do Modelo:',key='siso_imc_den_coeff',help=help_text,placeholder='1.334 , 1')
+            coefficients_validations(den_coeff)
+            
+            delay_checkbox_col, delay_input_col = st.columns(2)
+            with delay_checkbox_col:
+                delay_checkbox=st.checkbox('Atraso de Transporte?')
+                
+            with delay_input_col:
+                if delay_checkbox:
+                    delay_input = st.number_input(label='delay',key='delay_input',label_visibility='collapsed')
+                    
             reference_number = st.radio('Quantidade de referências',['Única','Múltiplas'],horizontal=True,key='reference_number')
             
 
@@ -141,7 +153,11 @@ def imc_Controller_Interface():
                         'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, max_value=1.0, key='imc_sr_tau_mf1')
             
             if st.button('Iniciar', type='primary', key='imc_siso_button'):
+                
+                
+                
                 if reference_number == 'Única':
+                    
                     imcControlProcessSISO(imc_sr_tau_mf1, imc_single_reference, imc_single_reference, imc_single_reference
                                             )
                     
@@ -193,17 +209,81 @@ def imc_Controller_Interface():
 
         process_output_dataframe = dataframeToPlot('process_output_sensor','Process Output','reference_input')
         st.subheader('Resposta do Sistema')
-        if not getattr(process_output_dataframe,'empty',None):
-            st.line_chart(data=process_output_dataframe, x= 'Time (s)', y = ['Reference','Process Output'], height=500)
-        
+        plot_chart_validation(process_output_dataframe, x = 'Time (s)', y = ['Reference','Process Output'],height=500)
+                
         st.subheader('Sinal de Controle')
         control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
         control_signal_1_dataframe = dictionary_to_pandasDataframe(control_signal_with_elapsed_time,'Control Signal 1')
-        if not getattr(control_signal_1_dataframe,'empty',None):
-            st.line_chart(data= control_signal_1_dataframe,x= 'Time (s)', y = 'Control Signal 1',height=200)
         
+        if not control_signal_1_dataframe is not None and not control_signal_1_dataframe.empty:
+            plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
+        
+def coefficients_validations(coeff_string):
+    if  coeff_string == '':
+        return None
+    if not validateFloatInput(coeff_string):
+        return st.error('Insira um valor válido')
+
+def plot_chart_validation(plot_variable,y:str,height= 200, x = 'Time (s)'):
+    if plot_variable is None:
+        return None
+    if plot_variable.empty:
+        return None
+    
+    return st.line_chart(data= plot_variable,x = x, y = y,height=height)
+
+def process_tf_input(num_coeff:str,den_coeff:str):
+    num_coeff_float = string2floatArray(num_coeff)
+    den_coeff_float = string2floatArray(den_coeff)
+
+    sampling_time = get_session_variable('sampling_time')
+
+    # Coefiientes do Modelo Smith motor 1
+    Kpsmith1 =    0.9995
+    thetasmith1 = 0.65
+    tausmith1 =   1.809
+    
+    # Motor 1 Model Transfer Function
+    Gm1 = tf(Kpsmith1, [tausmith1, 1])
+    Gmz1 = c2d(Gm1, sampling_time)
+    num1, den1 = tfdata(Gmz1)
+    Bm1 = num1[0][0]
+    Am1 = den1[0][0]
+    b0m1 = Bm1[0]
+    a1m1 = Am1[1]
+
+def validateFloatInput(input_numbers_str:str):
+    if ',' in input_numbers_str:
+        parts = input_numbers_str.split(',')
+    
+        for part in parts:
+            part = part.strip()
+            try:
+                float(part)
+            except ValueError:
+                return False
+        
+        return True
+    
+    else:
+        try:
+            float(input_numbers_str)
+        except ValueError:
+            return False
+        return True
 
 
+def string2floatArray(input_numbers_str:str) -> list[float] | float:
+    '''
+    Split the input string into an array of numbers
+    '''
+    if ',' in input_numbers_str:
+        return [float(num.strip()) for num in input_numbers_str.split(',')]
+    else:
+        return float(input_numbers_str)
+    
+    
+    
 
 
 def imcControlProcessTISO(imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,

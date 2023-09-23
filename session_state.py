@@ -36,7 +36,33 @@ def loadSessionStates():
         st.session_state.controller_parameters['process_output_sensor'] = {}
     
 
+session_list = [
+        "samples_number",
+        "sampling_time",
+        "control_signal_1",
+        "control_signal_2",
+        "reference_input",
+        "saturation_max_value",
+        "saturation_min_value",
+        "process_output_sensor"]
+
 def get_session_variable(variable:str):
+    """
+    My function with predefined options.
+
+    Parameters:
+    option (str):[
+        "samples_number",
+        "sampling_time",
+        "control_signal_1",
+        "control_signal_2",
+        "reference_input",
+        "saturation_max_value",
+        "saturation_min_value",
+        "process_output_sensor"]
+    Returns:
+    dict
+    """
     
     session_variable = {
 
@@ -51,3 +77,4 @@ def get_session_variable(variable:str):
     }
     
     return session_variable[variable]
+
