@@ -46,6 +46,7 @@ def get_session_variable(variable:str):
         "control_signal_2":         st.session_state.controller_parameters['control_signal_2'],
         "reference_input":          st.session_state.controller_parameters['reference_input'],
         "saturation_max_value":     st.session_state.controller_parameters['saturation_max_value'],
+        "saturation_min_value":     st.session_state.controller_parameters['saturation_min_value'],
         "process_output_sensor":    st.session_state.controller_parameters['process_output_sensor'],
     }
     
