@@ -193,13 +193,13 @@ def imc_Controller_Interface():
 
         process_output_dataframe = dataframeToPlot('process_output_sensor','Process Output','reference_input')
         st.subheader('Resposta do Sistema')
-        if not process_output_dataframe.empty:
+        if not getattr(process_output_dataframe,'empty',None):
             st.line_chart(data=process_output_dataframe, x= 'Time (s)', y = ['Reference','Process Output'], height=500)
         
         st.subheader('Sinal de Controle')
         control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
         control_signal_1_dataframe = dictionary_to_pandasDataframe(control_signal_with_elapsed_time,'Control Signal 1')
-        if not control_signal_1_dataframe.empty:
+        if not getattr(control_signal_1_dataframe,'empty',None):
             st.line_chart(data= control_signal_1_dataframe,x= 'Time (s)', y = 'Control Signal 1',height=200)
         
 
@@ -599,7 +599,6 @@ def imcControlProcessSISO(  imc_mr_tau_mf1, imc_multiple_reference1, imc_multipl
             # Control Signal
             manipulated_variable_1[interation] = alpha1*manipulated_variable_1[interation-1] + ((1-alpha1)/b0m1)*erro1[interation] + \
                                                 a1m1*((1-alpha1)/b0m1)*erro1[interation-1]
-
 
             # Control Signal Saturation
             manipulated_variable_1[interation] = max(min_pot, min(manipulated_variable_1[interation], max_pot))
