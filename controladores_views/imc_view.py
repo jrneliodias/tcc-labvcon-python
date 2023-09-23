@@ -8,9 +8,9 @@ import datetime
 from session_state import get_session_variable
 
 
-def datetime_obj_to_elapsed_time():
+def datetime_obj_to_elapsed_time(variable:str)->dict:
 
-    sensor_data_dict = get_session_variable('process_output_sensor')
+    sensor_data_dict = get_session_variable(variable)
     date_object = keys2DatetimeObj(sensor_data_dict)
 
     time_interval = [0] + [(date_object[i] - date_object[0]).total_seconds()
@@ -23,20 +23,41 @@ def datetime_obj_to_elapsed_time():
 
     elapsed_time_in_sec = {time_interval[i]: sensor_data_dict[key]
                            for i, key in enumerate(sensor_data_dict)}
+    
 
     return elapsed_time_in_sec
 
+def dictionary_to_pandasDataframe(variable:dict,variable_name_column:str)->pd.DataFrame:
+
+    # Convert the inner dictionary to a list of dictionaries
+    data_list = [{"Time (s)": timestamp, f"{variable_name_column}": value} for timestamp, value in variable.items()]
+
+    # Create a DataFrame from the list of dictionaries
+    variable_dataframe = pd.DataFrame(data_list)
+    return variable_dataframe
+
+def insertReferenceInDataframe(variable_dataframe:pd.DataFrame,reference_col:list)->pd.DataFrame:
+
+    # Convert the inner dictionary to a list of dictionaries
+    variable_dataframe['Reference'] = reference_col
+
+    return variable_dataframe
+
+def dataframeToPlot(variable_dict:str,variable_name_to_plot:str, second_variable:str) -> pd.DataFrame:
+    variable_with_time = datetime_obj_to_elapsed_time(variable_dict)
+    process_dictionary = dictionary_to_pandasDataframe(variable_with_time,variable_name_to_plot)
+    return insertReferenceInDataframe(process_dictionary,get_session_variable(second_variable))
 
 
-def calculate_time_limit():
+def calculate_time_limit()->float:
     # Receber os valores de tempo de amostragem e número de amostras da sessão
-    sampling_time = st.session_state.controller_parameters['sampling_time']
-    samples_number = st.session_state.controller_parameters['samples_number']
+    sampling_time = get_session_variable('sampling_time')
+    samples_number = get_session_variable('samples_number')
     time_max_value = samples_number*sampling_time
     return time_max_value
 
 
-def get_sample_position(sampling_time, samples_number, time_instant):
+def get_sample_position(sampling_time:float, samples_number:int, time_instant:float) -> int:
     """
     Calculate the position (index) of a given time instant in the sampled data.
 
@@ -167,16 +188,15 @@ def imc_Controller_Interface():
 
     with graphics_col:
 
-        sensor_data_with_elapsed_time = datetime_obj_to_elapsed_time()
+        process_output_dataframe = dataframeToPlot('process_output_sensor','Process Output','reference_input')
+        control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
         st.subheader('Resposta do Sistema')
-        st.line_chart(data=sensor_data_with_elapsed_time, height=500)
-        st.subheader('Sinal de Controle')
-        st.line_chart(
-            data=st.session_state.controller_parameters['control_signal_1'])
-        st.line_chart(
-            data=st.session_state.controller_parameters['control_signal_2'])
+        st.line_chart(data=process_output_dataframe, x= 'Time (s)', y = ['Reference','Process Output'], height=400)
         
-        st.write(st.session_state.controller_parameters['reference_input'])
+        st.subheader('Sinal de Controle')
+        st.line_chart(control_signal_with_elapsed_time,height=200)
+        st.line_chart(data= get_session_variable('control_signal_2'),height=200)
+        
 
 
 
@@ -475,12 +495,12 @@ def imcControlProcess():
 
 
 
-def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,
-                      change_ref_instant2 = 1, change_ref_instant3 = 1):
+def imcControlProcessSISO(  imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,
+                            change_ref_instant2 = 1, change_ref_instant3 = 1):
 
     # Receber os valores de tempo de amostragem e número de amostras da sessão
-    sampling_time = st.session_state.controller_parameters['sampling_time']
-    samples_number = st.session_state.controller_parameters['samples_number']
+    sampling_time = get_session_variable('sampling_time')
+    samples_number = get_session_variable('samples_number')
 
     # IMC Controller Project
 
@@ -491,10 +511,8 @@ def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple
     output_model_comparation = zeros(samples_number)
 
     # Take the index of time to change the referencee
-    instant_sample_2 = get_sample_position(
-        sampling_time, samples_number, change_ref_instant2)
-    instant_sample_3 = get_sample_position(
-        sampling_time, samples_number, change_ref_instant3)
+    instant_sample_2 = get_sample_position(sampling_time, samples_number, change_ref_instant2)
+    instant_sample_3 = get_sample_position(sampling_time, samples_number, change_ref_instant3)
 
     reference_input = imc_multiple_reference1*ones(samples_number)
     reference_input[instant_sample_2:instant_sample_3] = imc_multiple_reference2
@@ -506,8 +524,8 @@ def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple
     ajuste1 = 1
 
     # Power Saturation
-    max_pot = 100
-    min_pot = 0
+    max_pot = get_session_variable('saturation_max_value')
+    min_pot = get_session_variable('saturation_min_value')
 
     # Manipulated variable
     manipulated_variable_1 = zeros(samples_number)
@@ -533,7 +551,7 @@ def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple
     # tau_mf1 = ajuste1*tausmith1
     tau_mf1 = imc_mr_tau_mf1
     alpha1 = exp(-sampling_time/tau_mf1)
-
+    
 
     # Receive the Arduino object from the session
     arduinoData = st.session_state.connected['arduinoData']
@@ -543,8 +561,8 @@ def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple
     control_signal_1 = st.session_state.controller_parameters['control_signal_1']
     
     # clear previous control signal values
-    st.session_state.sensor = dict()
-    sensor = st.session_state.sensor
+    st.session_state.controller_parameters['process_output_sensor'] = dict()
+    process_output_sensor = st.session_state.controller_parameters['process_output_sensor']
 
     # inicializar  o timer
     start_time = time.time()
@@ -575,12 +593,11 @@ def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple
 
             # Control Signal
             manipulated_variable_1[interation] = alpha1*manipulated_variable_1[interation-1] + ((1-alpha1)/b0m1)*erro1[interation] + \
-                                            a1m1*((1-alpha1)/b0m1)*erro1[interation-1]
+                                                a1m1*((1-alpha1)/b0m1)*erro1[interation-1]
 
 
             # Control Signal Saturation
-            manipulated_variable_1[interation] = max(
-                min_pot, min(manipulated_variable_1[interation], max_pot))
+            manipulated_variable_1[interation] = max(min_pot, min(manipulated_variable_1[interation], max_pot))
            
 
             # Motor Power String Formatation
@@ -591,8 +608,10 @@ def imcControlProcessSISO( imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple
                 process_output[interation] = process_output[interation-1]
 
             sendToArduino(arduinoData, motors_power_packet[interation])
+            
+            # Store the output process values and 
             current_timestamp = datetime.datetime.now()
-            sensor[str(current_timestamp)] = float(process_output[interation])
+            process_output_sensor[str(current_timestamp)] = float(process_output[interation])
             control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[interation])
             interation += 1
 
