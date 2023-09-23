@@ -44,6 +44,9 @@ def insertReferenceInDataframe(variable_dataframe:pd.DataFrame,reference_col:lis
     return variable_dataframe
 
 def dataframeToPlot(variable_dict:str,variable_name_to_plot:str, second_variable:str) -> pd.DataFrame:
+    if not datetime_obj_to_elapsed_time(variable_dict):
+        return
+    
     variable_with_time = datetime_obj_to_elapsed_time(variable_dict)
     process_dictionary = dictionary_to_pandasDataframe(variable_with_time,variable_name_to_plot)
     return insertReferenceInDataframe(process_dictionary,get_session_variable(second_variable))
@@ -128,11 +131,11 @@ def imc_Controller_Interface():
 
                 with changeReferenceCol2:
                     siso_change_ref_instant3 = st.number_input(
-                        'Instante da referência 3 (s):', value=calculate_time_limit()/2, step=0.1, min_value=0.0, max_value=calculate_time_limit(), key='siso_change_ref_instant3')
+                        'Instante da referência 3 (s):', value=calculate_time_limit()*3/4, step=0.1, min_value=0.0, max_value=calculate_time_limit(), key='siso_change_ref_instant3')
 
                 with changeReferenceCol1:
                     siso_change_ref_instant2 = st.number_input(
-                        'Instante da referência 2 (s):', value=2.0, step=1.0, min_value=0.0, max_value=siso_change_ref_instant3, key='siso_change_ref_instant2')
+                        'Instante da referência 2 (s):', value=calculate_time_limit()/2,step=1.0, min_value=0.0, max_value=siso_change_ref_instant3, key='siso_change_ref_instant2')
                 
             imc_sr_tau_mf1 = st.number_input(
                         'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, max_value=1.0, key='imc_sr_tau_mf1')
@@ -189,13 +192,15 @@ def imc_Controller_Interface():
     with graphics_col:
 
         process_output_dataframe = dataframeToPlot('process_output_sensor','Process Output','reference_input')
-        control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
         st.subheader('Resposta do Sistema')
-        st.line_chart(data=process_output_dataframe, x= 'Time (s)', y = ['Reference','Process Output'], height=400)
+        if not process_output_dataframe.empty:
+            st.line_chart(data=process_output_dataframe, x= 'Time (s)', y = ['Reference','Process Output'], height=500)
         
         st.subheader('Sinal de Controle')
-        st.line_chart(control_signal_with_elapsed_time,height=200)
-        st.line_chart(data= get_session_variable('control_signal_2'),height=200)
+        control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
+        control_signal_1_dataframe = dictionary_to_pandasDataframe(control_signal_with_elapsed_time,'Control Signal 1')
+        if not control_signal_1_dataframe.empty:
+            st.line_chart(data= control_signal_1_dataframe,x= 'Time (s)', y = 'Control Signal 1',height=200)
         
 
 
