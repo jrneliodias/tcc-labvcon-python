@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from formatterInputs import *
 from control.matlab import tf, c2d, tfdata
-from numpy import exp, ones, zeros
+from numpy import exp, ones, zeros,array, dot
 from connections import *
 import datetime
 from session_state import get_session_variable
@@ -154,15 +154,12 @@ def imc_Controller_Interface():
             
             if st.button('Iniciar', type='primary', key='imc_siso_button'):
                 
-                
-                
                 if reference_number == 'Única':
                     
-                    imcControlProcessSISO(imc_sr_tau_mf1, imc_single_reference, imc_single_reference, imc_single_reference
-                                            )
+                    imcControlProcessSISO(num_coeff,den_coeff,imc_sr_tau_mf1, imc_single_reference, imc_single_reference, imc_single_reference)
                     
-                else:
-                    imcControlProcessSISO(imc_sr_tau_mf1, imc_siso_multiple_reference1, imc_siso_multiple_reference2, imc_siso_multiple_reference3,
+                elif reference_number == 'Múltiplas':
+                    imcControlProcessSISO(num_coeff,den_coeff,imc_sr_tau_mf1, imc_siso_multiple_reference1, imc_siso_multiple_reference2, imc_siso_multiple_reference3,
                                           siso_change_ref_instant2,siso_change_ref_instant3)
 
         with mimoSystemTab:
@@ -215,9 +212,10 @@ def imc_Controller_Interface():
         control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
         control_signal_1_dataframe = dictionary_to_pandasDataframe(control_signal_with_elapsed_time,'Control Signal 1')
         
-        if not control_signal_1_dataframe is not None and not control_signal_1_dataframe.empty:
-            plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
         
+        plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
+
+      
 def coefficients_validations(coeff_string):
     if  coeff_string == '':
         return None
@@ -233,25 +231,20 @@ def plot_chart_validation(plot_variable,y:str,height= 200, x = 'Time (s)'):
     
     return st.line_chart(data= plot_variable,x = x, y = y,height=height)
 
-def process_tf_input(num_coeff:str,den_coeff:str):
+def convert_tf_2_discrete(num_coeff:str,den_coeff:str):
+           
     num_coeff_float = string2floatArray(num_coeff)
     den_coeff_float = string2floatArray(den_coeff)
 
     sampling_time = get_session_variable('sampling_time')
-
-    # Coefiientes do Modelo Smith motor 1
-    Kpsmith1 =    0.9995
-    thetasmith1 = 0.65
-    tausmith1 =   1.809
     
     # Motor 1 Model Transfer Function
-    Gm1 = tf(Kpsmith1, [tausmith1, 1])
+    Gm1 = tf(num_coeff_float, den_coeff_float)
     Gmz1 = c2d(Gm1, sampling_time)
     num1, den1 = tfdata(Gmz1)
     Bm1 = num1[0][0]
     Am1 = den1[0][0]
-    b0m1 = Bm1[0]
-    a1m1 = Am1[1]
+    return Am1, Bm1
 
 def validateFloatInput(input_numbers_str:str):
     if ',' in input_numbers_str:
@@ -387,7 +380,7 @@ def imcControlProcessTISO(imc_multiple_reference1, imc_multiple_reference2, imc_
     
     # inicializar  o timer
     start_time = time.time()
-    interation = 0
+    kk = 0
 
     # Inicializar a barra de progresso
     progress_text = "Operation in progress. Please wait."
@@ -396,53 +389,53 @@ def imcControlProcessTISO(imc_multiple_reference1, imc_multiple_reference2, imc_
     # receive the first mesure 
     sendToArduino(arduinoData, '0,0')
 
-    while interation < samples_number:
+    while kk < samples_number:
         current_time = time.time()
         if current_time - start_time > sampling_time:
             start_time = current_time
             # -----  Angle Sensor Output
-            process_output[interation] = readFromArduino(arduinoData)
+            process_output[kk] = readFromArduino(arduinoData)
 
             # ---- Motor Model Output
-            model_output_1[interation] = -a1m1 * model_output_1[interation-1] + b0m1*manipulated_variable_1[interation-1]
-            model_output_2[interation] = -a1m2 * model_output_2[interation-1] - b0m2*manipulated_variable_2[interation-1]
+            model_output_1[kk] = -a1m1 * model_output_1[kk-1] + b0m1*manipulated_variable_1[kk-1]
+            model_output_2[kk] = -a1m2 * model_output_2[kk-1] - b0m2*manipulated_variable_2[kk-1]
 
             # Determine uncertainty
-            output_model_comparation_1[interation] = process_output[interation] - model_output_1[interation]
-            output_model_comparation_2[interation] = -(process_output[interation] - model_output_2[interation])
+            output_model_comparation_1[kk] = process_output[kk] - model_output_1[kk]
+            output_model_comparation_2[kk] = -(process_output[kk] - model_output_2[kk])
 
             # Determine Error
-            erro1[interation] = reference_input[interation] - output_model_comparation_1[interation]
-            erro2[interation] = - (reference_input[interation] + output_model_comparation_2[interation])
+            erro1[kk] = reference_input[kk] - output_model_comparation_1[kk]
+            erro2[kk] = - (reference_input[kk] + output_model_comparation_2[kk])
 
             # Control Signal
-            manipulated_variable_1[interation] = alpha1*manipulated_variable_1[interation-1] + ((1-alpha1)/b0m1)*erro1[interation] + \
-                                            a1m1*((1-alpha1)/b0m1)*erro1[interation-1]
+            manipulated_variable_1[kk] = alpha1*manipulated_variable_1[kk-1] + ((1-alpha1)/b0m1)*erro1[kk] + \
+                                            a1m1*((1-alpha1)/b0m1)*erro1[kk-1]
 
-            manipulated_variable_2[interation] = alpha2*manipulated_variable_2[interation-1] + ((1-alpha2)/b0m2)*erro2[interation] + \
-                                            a1m2*((1-alpha2)/b0m2)*erro2[interation-1]
+            manipulated_variable_2[kk] = alpha2*manipulated_variable_2[kk-1] + ((1-alpha2)/b0m2)*erro2[kk] + \
+                                            a1m2*((1-alpha2)/b0m2)*erro2[kk-1]
 
             # Control Signal Saturation
-            manipulated_variable_1[interation] = max(
-                min_pot, min(manipulated_variable_1[interation], max_pot))
-            manipulated_variable_2[interation] = max(
-                min_pot, min(manipulated_variable_2[interation], max_pot))
+            manipulated_variable_1[kk] = max(
+                min_pot, min(manipulated_variable_1[kk], max_pot))
+            manipulated_variable_2[kk] = max(
+                min_pot, min(manipulated_variable_2[kk], max_pot))
 
             # Motor Power String Formatation
-            motors_power_packet[interation] = f"{manipulated_variable_1[interation]},{manipulated_variable_2[interation]}\r"
+            motors_power_packet[kk] = f"{manipulated_variable_1[kk]},{manipulated_variable_2[kk]}\r"
 
             # Clean Sensor Data
-            if process_output[interation] <= 0 or process_output[interation] > 90:
-                process_output[interation] = process_output[interation-1]
+            if process_output[kk] <= 0 or process_output[kk] > 90:
+                process_output[kk] = process_output[kk-1]
 
-            sendToArduino(arduinoData, motors_power_packet[interation])
+            sendToArduino(arduinoData, motors_power_packet[kk])
             current_timestamp = datetime.datetime.now()
-            sensor[str(current_timestamp)] = float(process_output[interation])
-            control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[interation])
-            control_signal_2[str(current_timestamp)] = float(manipulated_variable_2[interation])
-            interation += 1
+            sensor[str(current_timestamp)] = float(process_output[kk])
+            control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
+            control_signal_2[str(current_timestamp)] = float(manipulated_variable_2[kk])
+            kk += 1
 
-            percent_complete = interation * 1 / samples_number
+            percent_complete = kk * 1 / samples_number
             my_bar.progress(percent_complete, text=progress_text)
 
     # Turn off the motor
@@ -525,64 +518,70 @@ def imcControlProcess():
 
     # inicializar  o timer
     start_time = time.time()
-    interation = 0
+    kk = 0
 
     # Inicializar a barra de progresso
     progress_text = "Operation in progress. Please wait."
     my_bar = st.progress(0, text=progress_text)
     sendToArduino(arduinoData, '0,0')
 
-    while interation < samples_number:
+    while kk < samples_number:
         current_time = time.time()
         if current_time - start_time > sampling_time:
             start_time = current_time
             # -----  Angle Sensor Output
-            angulo_sensor[interation] = readFromArduino(arduinoData)
+            angulo_sensor[kk] = readFromArduino(arduinoData)
 
             # ---- Motor Model Output
-            angulo_model1[interation] = -a1m1 * angulo_model1[interation-1] +  b0m1*pot_motor_1[interation-1]
-            angulo_model2[interation] = -a1m2 * angulo_model2[interation-1] -  b0m2*pot_motor_2[interation-1]
+            angulo_model1[kk] = -a1m1 * angulo_model1[kk-1] +  b0m1*pot_motor_1[kk-1]
+            angulo_model2[kk] = -a1m2 * angulo_model2[kk-1] -  b0m2*pot_motor_2[kk-1]
 
             # Determine uncertainty
-            d0barra1[interation] = angulo_sensor[interation] -  angulo_model1[interation]
-            d0barra2[interation] = -  (angulo_sensor[interation] - angulo_model2[interation])
+            d0barra1[kk] = angulo_sensor[kk] -  angulo_model1[kk]
+            d0barra2[kk] = -  (angulo_sensor[kk] - angulo_model2[kk])
 
             # Determine Error
-            erro1[interation] = angulo_ref[interation] -  d0barra1[interation]
-            erro2[interation] = -  (angulo_ref[interation] + d0barra2[interation])
+            erro1[kk] = angulo_ref[kk] -  d0barra1[kk]
+            erro2[kk] = -  (angulo_ref[kk] + d0barra2[kk])
 
             # Control Signal
-            pot_motor_1[interation] = alpha1*pot_motor_1[interation-1] + ((1-alpha1)/b0m1)*erro1[interation] +  a1m1*((1-alpha1)/b0m1)*erro1[interation-1]
+            pot_motor_1[kk] = alpha1*pot_motor_1[kk-1] + ((1-alpha1)/b0m1)*erro1[kk] +  a1m1*((1-alpha1)/b0m1)*erro1[kk-1]
 
-            pot_motor_2[interation] = alpha2*pot_motor_2[interation-1] + ((1-alpha2)/b0m2)*erro2[interation] +  a1m2*((1-alpha2)/b0m2)*erro2[interation-1]
+            pot_motor_2[kk] = alpha2*pot_motor_2[kk-1] + ((1-alpha2)/b0m2)*erro2[kk] +  a1m2*((1-alpha2)/b0m2)*erro2[kk-1]
 
             # Control Signal Saturation
-            pot_motor_1[interation] = max(
-                min_pot, min(pot_motor_1[interation], max_pot))
-            pot_motor_2[interation] = max(
-                min_pot, min(pot_motor_2[interation], max_pot))
+            pot_motor_1[kk] = max(
+                min_pot, min(pot_motor_1[kk], max_pot))
+            pot_motor_2[kk] = max(
+                min_pot, min(pot_motor_2[kk], max_pot))
 
             # Motor Power String Formatation
-            motors_power_packet[interation] = f"{pot_motor_1[interation]},{pot_motor_2[interation]}\r"
+            motors_power_packet[kk] = f"{pot_motor_1[kk]},{pot_motor_2[kk]}\r"
 
             # Clean Sensor Data
-            if angulo_sensor[interation] <= 0 or angulo_sensor[interation] > 90:
-                angulo_sensor[interation] = angulo_sensor[interation-1]
+            if angulo_sensor[kk] <= 0 or angulo_sensor[kk] > 90:
+                angulo_sensor[kk] = angulo_sensor[kk-1]
 
-            sendToArduino(arduinoData, motors_power_packet[interation])
+            sendToArduino(arduinoData, motors_power_packet[kk])
             current_timestamp = datetime.datetime.now()
-            sensor[str(current_timestamp)] = float(angulo_sensor[interation])
-            interation += 1
+            sensor[str(current_timestamp)] = float(angulo_sensor[kk])
+            kk += 1
 
-            percent_complete = interation * 1 / samples_number
+            percent_complete = kk * 1 / samples_number
             my_bar.progress(percent_complete, text=progress_text)
 
     sendToArduino(arduinoData, '0,0')
 
 
 
-def imcControlProcessSISO(  imc_mr_tau_mf1, imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,
+def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, imc_multiple_reference1:float, imc_multiple_reference2:float, imc_multiple_reference3:float,
                             change_ref_instant2 = 1, change_ref_instant3 = 1):
+    
+    if num_coeff == '':
+        return st.error('Coeficientes incorretos no Numerador.')
+    
+    if den_coeff =='':
+        return st.error('Coeficientes incorretos no Denominador.')
 
     # Receber os valores de tempo de amostragem e número de amostras da sessão
     sampling_time = get_session_variable('sampling_time')
@@ -593,7 +592,7 @@ def imcControlProcessSISO(  imc_mr_tau_mf1, imc_multiple_reference1, imc_multipl
     # Initial Conditions
     process_output = zeros(samples_number)
     model_output_1 = zeros(samples_number)
-    erro1 = zeros(samples_number)
+    erro1 = zeros(samples_number+1)
     output_model_comparation = zeros(samples_number)
 
     # Take the index of time to change the referencee
@@ -615,7 +614,7 @@ def imcControlProcessSISO(  imc_mr_tau_mf1, imc_multiple_reference1, imc_multipl
 
     # Manipulated variable
     manipulated_variable_1 = zeros(samples_number)
-    motors_power_packet = ["0,0"]*samples_number
+    motors_power_packet = "0"
 
     # Coefiientes do Modelo Smith motor 1
     Kpsmith1 = 0.9995
@@ -631,6 +630,12 @@ def imcControlProcessSISO(  imc_mr_tau_mf1, imc_multiple_reference1, imc_multipl
     Am1 = den1[0][0]
     b0m1 = Bm1[0]
     a1m1 = Am1[1]
+    
+    A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff)
+    
+    A_order = len(A_coeff)-1
+    B_order = len(B_coeff) # Zero holder aumenta um grau
+    
 
 
     # Close Loop Tau Calculation
@@ -652,56 +657,105 @@ def imcControlProcessSISO(  imc_mr_tau_mf1, imc_multiple_reference1, imc_multipl
 
     # inicializar  o timer
     start_time = time.time()
-    interation = 0
+    kk = 0
 
     # Inicializar a barra de progresso
     progress_text = "Operation in progress. Please wait."
     my_bar = st.progress(0, text=progress_text)
     
     # receive the first mesure 
-    sendToArduino(arduinoData, '0,0')
+    sendToArduino(arduinoData, "0")
+    
 
-    while interation < samples_number:
+    while kk < samples_number:
         current_time = time.time()
         if current_time - start_time > sampling_time:
             start_time = current_time
+            
             # -----  Angle Sensor Output
-            process_output[interation] = readFromArduino(arduinoData)
+            process_output[kk] = readFromArduino(arduinoData)
+
+            
+            if kk < A_order:
+                # Store the output process values and control signal
+                current_timestamp = datetime.datetime.now()
+                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
+                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
+                kk += 1
+
+                percent_complete = kk / (samples_number)
+                my_bar.progress(percent_complete, text=progress_text)
+                
+                sendToArduino(arduinoData, '0')
+                
 
             # ---- Motor Model Output
-            model_output_1[interation] = -a1m1 * model_output_1[interation-1] + b0m1*manipulated_variable_1[interation-1]
+            elif kk == 1 and A_order == 1:
+                model_output_1[kk] = dot(-A_coeff[1:], model_output_1[kk-1::-1])\
+                                        + dot(B_coeff, manipulated_variable_1[kk-1::-1])
+                # Determine uncertainty
+                output_model_comparation[kk] = process_output[kk] - model_output_1[kk]
 
-            # Determine uncertainty
-            output_model_comparation[interation] = process_output[interation] - model_output_1[interation]
+                # Determine Error
+                erro1[kk] = reference_input[kk] - output_model_comparation[kk]
 
-            # Determine Error
-            erro1[interation] = reference_input[interation] - output_model_comparation[interation]
+                # Control Signal
+                manipulated_variable_1[kk] = alpha1*manipulated_variable_1[kk-1] + ((1-alpha1)/b0m1)*erro1[kk] + \
+                                                    a1m1*((1-alpha1)/b0m1)*erro1[kk-1]
 
-            # Control Signal
-            manipulated_variable_1[interation] = alpha1*manipulated_variable_1[interation-1] + ((1-alpha1)/b0m1)*erro1[interation] + \
-                                                a1m1*((1-alpha1)/b0m1)*erro1[interation-1]
-
-            # Control Signal Saturation
-            manipulated_variable_1[interation] = max(min_pot, min(manipulated_variable_1[interation], max_pot))
-           
-
-            # Motor Power String Formatation
-            motors_power_packet[interation] = f"{manipulated_variable_1[interation]}\r"
-
-            # Clean Sensor Data
-            if process_output[interation] <= 0 or process_output[interation] > 90:
-                process_output[interation] = process_output[interation-1]
-
-            sendToArduino(arduinoData, motors_power_packet[interation])
+                # Control Signal Saturation
+                manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
             
-            # Store the output process values and 
-            current_timestamp = datetime.datetime.now()
-            process_output_sensor[str(current_timestamp)] = float(process_output[interation])
-            control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[interation])
-            interation += 1
 
-            percent_complete = interation * 1 / samples_number
-            my_bar.progress(percent_complete, text=progress_text)
+                # Motor Power String Formatation
+                motors_power_packet = f"{manipulated_variable_1[kk]}\r"
+
+                sendToArduino(arduinoData, motors_power_packet)
+                
+                # Store the output process values and control signal
+                current_timestamp = datetime.datetime.now()
+                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
+                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
+                kk += 1
+
+                percent_complete = kk / (samples_number)
+                my_bar.progress(percent_complete, text=progress_text)
+                                        
+            elif kk>1:
+                
+                model_output_1[kk] = dot(-A_coeff[1:], model_output_1[kk-1:kk-A_order-1:-1])\
+                                        + dot(B_coeff, manipulated_variable_1[kk-1:kk-B_order-1:-1])
+                
+
+                # Determine uncertainty
+                output_model_comparation[kk] = process_output[kk] - model_output_1[kk]
+
+                # Determine Error
+                erro1[kk] = reference_input[kk] - output_model_comparation[kk]
+
+                # Control Signal
+                manipulated_variable_1[kk] = alpha1*manipulated_variable_1[kk-1] + ((1-alpha1)/b0m1)*erro1[kk] + \
+                                                    a1m1*((1-alpha1)/b0m1)*erro1[kk-1]
+
+                # Control Signal Saturation
+                manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
+            
+
+                # Motor Power String Formatation
+                motors_power_packet = f"{manipulated_variable_1[kk]}\r"
+               
+
+                sendToArduino(arduinoData, motors_power_packet)
+                
+                # Store the output process values and control signal
+                current_timestamp = datetime.datetime.now()
+                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
+                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
+                kk += 1
+
+                percent_complete = kk / (samples_number)
+                my_bar.progress(percent_complete, text=progress_text)
 
     # Turn off the motor
-    sendToArduino(arduinoData, '0,0')
+    sendToArduino(arduinoData, '0')
+
