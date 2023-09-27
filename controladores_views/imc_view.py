@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from formatterInputs import *
 from control.matlab import tf, c2d, tfdata
-from numpy import exp, ones, zeros,array, dot
+from numpy import exp, ones, zeros,array, dot, convolve
 from connections import *
 import datetime
 from session_state import get_session_variable
@@ -605,9 +605,6 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
     
     st.session_state.controller_parameters['reference_input'] = reference_input
 
-    # taumf1 e taumf2 Ajusts
-    ajuste1 = 1
-
     # Power Saturation
     max_pot = get_session_variable('saturation_max_value')
     min_pot = get_session_variable('saturation_min_value')
@@ -616,34 +613,21 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
     manipulated_variable_1 = zeros(samples_number)
     motors_power_packet = "0"
 
-    # Coefiientes do Modelo Smith motor 1
-    Kpsmith1 = 0.9995
-    thetasmith1 = 0.65
-    tausmith1 =  1.809
-
-
-    # Motor 1 Model Transfer Function
-    Gm1 = tf(Kpsmith1, [tausmith1, 1])
-    Gmz1 = c2d(Gm1, sampling_time)
-    num1, den1 = tfdata(Gmz1)
-    Bm1 = num1[0][0]
-    Am1 = den1[0][0]
-    b0m1 = Bm1[0]
-    a1m1 = Am1[1]
-    
     A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff)
     
     A_order = len(A_coeff)-1
     B_order = len(B_coeff) # Zero holder aumenta um grau
     
-
-
     # Close Loop Tau Calculation
     # tau_mf1 = ajuste1*tausmith1
     tau_mf1 = imc_mr_tau_mf1
     alpha1 = exp(-sampling_time/tau_mf1)
     
-
+    # Perform polynomial multiplication using np.convolve
+    alpha_delta = [1,-alpha1]
+    B_delta = convolve(B_coeff,alpha_delta)
+    
+    
     # Receive the Arduino object from the session
     arduinoData = st.session_state.connected['arduinoData']
 
@@ -700,9 +684,8 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
                 erro1[kk] = reference_input[kk] - output_model_comparation[kk]
 
                 # Control Signal
-                manipulated_variable_1[kk] = alpha1*manipulated_variable_1[kk-1] + ((1-alpha1)/b0m1)*erro1[kk] + \
-                                                    a1m1*((1-alpha1)/b0m1)*erro1[kk-1]
-
+                manipulated_variable_1[kk] = dot(-B_delta[1:],manipulated_variable_1[kk-1::-1])+ (1-alpha1)*dot(A_coeff,erro1[kk::-1])
+                manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta[0]
                 # Control Signal Saturation
                 manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
             
@@ -734,9 +717,8 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
                 erro1[kk] = reference_input[kk] - output_model_comparation[kk]
 
                 # Control Signal
-                manipulated_variable_1[kk] = alpha1*manipulated_variable_1[kk-1] + ((1-alpha1)/b0m1)*erro1[kk] + \
-                                                    a1m1*((1-alpha1)/b0m1)*erro1[kk-1]
-
+                manipulated_variable_1[kk] = dot(-B_delta[1:],manipulated_variable_1[kk-1:kk-B_order-1:-1])+ (1-alpha1)*dot(A_coeff,erro1[kk:kk-A_order-1:-1])
+                manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta[0]
                 # Control Signal Saturation
                 manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
             
