@@ -150,7 +150,7 @@ def imc_Controller_Interface():
                         'Instante da referência 2 (s):', value=calculate_time_limit()/2,step=1.0, min_value=0.0, max_value=siso_change_ref_instant3, key='siso_change_ref_instant2')
                 
             imc_sr_tau_mf1 = st.number_input(
-                        'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, max_value=1.0, key='imc_sr_tau_mf1')
+                        'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, key='imc_sr_tau_mf1')
             
             if st.button('Iniciar', type='primary', key='imc_siso_button'):
                 
@@ -182,11 +182,11 @@ def imc_Controller_Interface():
 
             with changeReferenceCol2:
                 change_ref_instant3 = st.number_input(
-                    'Instante da referência 3 (s):', value=calculate_time_limit()/2, step=0.1, min_value=0.0, max_value=calculate_time_limit(), key='change_ref_instant3')
+                    'Instante da referência 3 (s):', value=calculate_time_limit()*3/4, step=0.1, min_value=0.0, max_value=calculate_time_limit(), key='change_ref_instant3')
 
             with changeReferenceCol1:
                 change_ref_instant2 = st.number_input(
-                    'Instante da referência 2 (s):', value=2.0, step=1.0, min_value=0.0, max_value=change_ref_instant3, key='change_ref_instant2')
+                    'Instante da referência 2 (s):', value=calculate_time_limit()/2, step=1.0, min_value=0.0, max_value=change_ref_instant3, key='change_ref_instant2')
             st.write('Constante de Tempo de Malha Fechada ($\\tau$)')
             tau_mf_col1, tau_mf_col2 = st.columns(2)
             with tau_mf_col1:
@@ -603,7 +603,7 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
     reference_input[instant_sample_2:instant_sample_3] = imc_multiple_reference2
     reference_input[instant_sample_3:] = imc_multiple_reference3
     
-    st.session_state.controller_parameters['reference_input'] = reference_input
+    st.session_state.controller_parameters['reference_input'] = reference_input.tolist()
 
     # Power Saturation
     max_pot = get_session_variable('saturation_max_value')
@@ -615,6 +615,8 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
 
     A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff)
     
+    # print(A_coeff)
+    # print(B_coeff)
     A_order = len(A_coeff)-1
     B_order = len(B_coeff) # Zero holder aumenta um grau
     
@@ -657,10 +659,11 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
             start_time = current_time
             
             # -----  Angle Sensor Output
+            # print(f'kk = {kk}')
             process_output[kk] = readFromArduino(arduinoData)
 
             
-            if kk < A_order:
+            if kk <= A_order:
                 # Store the output process values and control signal
                 current_timestamp = datetime.datetime.now()
                 process_output_sensor[str(current_timestamp)] = float(process_output[kk])
@@ -704,8 +707,11 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
                 percent_complete = kk / (samples_number)
                 my_bar.progress(percent_complete, text=progress_text)
                                         
-            elif kk>1:
+            elif kk >A_order:
                 
+                # print(f'kk == {kk}')
+                # print(f'model_output_1: {model_output_1[kk-1:kk-A_order-1:-1]}')
+                # print(f'manipulated_variable_1: {manipulated_variable_1[kk-1:kk-B_order-1:-1]}')
                 model_output_1[kk] = dot(-A_coeff[1:], model_output_1[kk-1:kk-A_order-1:-1])\
                                         + dot(B_coeff, manipulated_variable_1[kk-1:kk-B_order-1:-1])
                 
