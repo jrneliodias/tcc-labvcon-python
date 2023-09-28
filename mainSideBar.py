@@ -53,7 +53,7 @@ def mainSidebarMenu():
             'Quantidade de amostras:', value=100, step=10, min_value=1)
         
         saturation_max_value = st.number_input('Saturação Máxima:',value=15,
-            min_value=0,max_value=256)
+            min_value=0)
         
         st.session_state.controller_parameters['saturation_max_value'] = saturation_max_value
         

@@ -15,11 +15,15 @@ def sidebarMenu():
     port_option = st.selectbox(
         'Qual porta deseja conectar?',
         [port_info.device for port_info in portlist])
+     
+    baudrate_connection = st.selectbox(
+        'Baudrate:',
+        [9600,115200,250000],index=2)
 
     col11, col12 = st.columns(2)
     with col11:
         if st.button('Conectar'):
-            serialPortValidationToConnect(port_option)
+            serialPortValidationToConnect(port_option,baudrate_connection)
 
     with col12:
         if st.button('Desconectar'):
@@ -56,8 +60,8 @@ def sidebarMenu():
     if st.button('Receber Dados'):
         if 'arduinoData' in st.session_state.connected:
             arduinoData = st.session_state.connected['arduinoData']
-            st.session_state.sensor = dict()
-            sensor = st.session_state.sensor
+            st.session_state.controller_parameters['process_output_sensor'] = dict()
+            process_output_sensor = st.session_state.controller_parameters['process_output_sensor']
 
             start_time = time.time()
             interation = 0
@@ -72,7 +76,7 @@ def sidebarMenu():
                     sendToArduino(arduinoData, textToSend)
                     dataRead = readFromArduino(arduinoData)
                     current_timestamp = datetime.datetime.now()
-                    sensor[str(current_timestamp)] = float(dataRead)
+                    process_output_sensor[str(current_timestamp)] = float(dataRead)
                     interation += 1
 
                     percent_complete = interation * 1 / samples_number
