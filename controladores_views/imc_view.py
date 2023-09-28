@@ -8,80 +8,6 @@ import datetime
 from session_state import get_session_variable
 
 
-def datetime_obj_to_elapsed_time(variable:str)->dict:
-
-    sensor_data_dict = get_session_variable(variable)
-    date_object = keys2DatetimeObj(sensor_data_dict)
-
-    time_interval = [0] + [(date_object[i] - date_object[0]).total_seconds()
-                           for i in range(1, len(date_object))]
-
-    # sensor_formatted2Hours_dict = {
-    #     key.split()[1]: value
-    #     for key, value in sensor_dict.items()
-    # }
-
-    elapsed_time_in_sec = {time_interval[i]: sensor_data_dict[key]
-                           for i, key in enumerate(sensor_data_dict)}
-    
-
-    return elapsed_time_in_sec
-
-def dictionary_to_pandasDataframe(variable:dict,variable_name_column:str)->pd.DataFrame:
-
-    # Convert the inner dictionary to a list of dictionaries
-    data_list = [{"Time (s)": timestamp, f"{variable_name_column}": value} for timestamp, value in variable.items()]
-
-    # Create a DataFrame from the list of dictionaries
-    variable_dataframe = pd.DataFrame(data_list)
-    return variable_dataframe
-
-def insertReferenceInDataframe(variable_dataframe:pd.DataFrame,reference_col:list)->pd.DataFrame:
-
-    # Convert the inner dictionary to a list of dictionaries
-    variable_dataframe['Reference'] = reference_col
-
-    return variable_dataframe
-
-def dataframeToPlot(variable_dict:str,variable_name_to_plot:str, second_variable:str) -> pd.DataFrame:
-    if not datetime_obj_to_elapsed_time(variable_dict):
-        return
-    
-    variable_with_time = datetime_obj_to_elapsed_time(variable_dict)
-    process_dictionary = dictionary_to_pandasDataframe(variable_with_time,variable_name_to_plot)
-    return insertReferenceInDataframe(process_dictionary,get_session_variable(second_variable))
-
-
-def calculate_time_limit()->float:
-    # Receber os valores de tempo de amostragem e número de amostras da sessão
-    sampling_time = get_session_variable('sampling_time')
-    samples_number = get_session_variable('samples_number')
-    time_max_value = samples_number*sampling_time
-    return time_max_value
-
-
-def get_sample_position(sampling_time:float, samples_number:int, time_instant:float) -> int:
-    """
-    Calculate the position (index) of a given time instant in the sampled data.
-
-    Parameters:
-    - sampling_time: The time between each sample.
-    - samples_number: The total number of samples.
-    - time_instant: The time instant for which you want to find the sample position.
-
-    Returns:
-    - The position (index) of the sample corresponding to the given time instant.
-    """
-    if time_instant < 0:
-        return 0  # Handle negative time instant
-
-    # Calculate the position based on the time instant and sampling time
-    position = int(time_instant / sampling_time)
-
-    # Ensure the position is within the valid range [0, samples_number-1]
-    position = max(0, min(position, samples_number - 1))
-
-    return position
 
 
 def imc_Controller_Interface():
@@ -156,11 +82,10 @@ def imc_Controller_Interface():
                 
                 if reference_number == 'Única':
                     
-                    imcControlProcessSISO(num_coeff,den_coeff,imc_sr_tau_mf1, imc_single_reference, imc_single_reference, imc_single_reference)
+                    imcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,imc_sr_tau_mf1, imc_single_reference, imc_single_reference, imc_single_reference)
                     
                 elif reference_number == 'Múltiplas':
-                    imcControlProcessSISO(num_coeff,den_coeff,imc_sr_tau_mf1, imc_siso_multiple_reference1, imc_siso_multiple_reference2, imc_siso_multiple_reference3,
-                                          siso_change_ref_instant2,siso_change_ref_instant3)
+                    imcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,imc_sr_tau_mf1, imc_siso_multiple_reference1, imc_siso_multiple_reference2, imc_siso_multiple_reference3, siso_change_ref_instant2,siso_change_ref_instant3)
 
         with mimoSystemTab:
             col21, col22, col23 = st.columns(3)
@@ -231,11 +156,13 @@ def plot_chart_validation(plot_variable,y:str,height= 200, x = 'Time (s)'):
     
     return st.line_chart(data= plot_variable,x = x, y = y,height=height)
 
-def convert_tf_2_discrete(num_coeff:str,den_coeff:str):
-           
+def convert_tf_2_discrete(num_coeff:str,den_coeff:str,tf_type:str):
     num_coeff_float = string2floatArray(num_coeff)
     den_coeff_float = string2floatArray(den_coeff)
 
+    if tf_type == 'Discreto':
+        return num_coeff_float, den_coeff_float
+    
     sampling_time = get_session_variable('sampling_time')
     
     # Motor 1 Model Transfer Function
@@ -277,8 +204,6 @@ def string2floatArray(input_numbers_str:str) -> list[float] | float:
         return float(input_numbers_str)
     
     
-    
-
 
 def imcControlProcessTISO(imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,
                       change_ref_instant2, change_ref_instant3,
@@ -574,8 +499,7 @@ def imcControlProcess():
 
 
 
-def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, imc_multiple_reference1:float, imc_multiple_reference2:float, imc_multiple_reference3:float,
-                            change_ref_instant2 = 1, change_ref_instant3 = 1):
+def imcControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, imc_multiple_reference1:float, imc_multiple_reference2:float, imc_multiple_reference3:float,change_ref_instant2 = 1, change_ref_instant3 = 1):
     
     if num_coeff == '':
         return st.error('Coeficientes incorretos no Numerador.')
@@ -613,7 +537,7 @@ def imcControlProcessSISO(num_coeff:str,den_coeff:str,  imc_mr_tau_mf1:float, im
     manipulated_variable_1 = zeros(samples_number)
     motors_power_packet = "0"
 
-    A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff)
+    A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff,transfer_function_type)
     
     # print(A_coeff)
     # print(B_coeff)
