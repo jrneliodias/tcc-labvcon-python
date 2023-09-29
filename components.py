@@ -83,12 +83,6 @@ def sidebarMenu():
 
                     my_bar.progress(percent_complete, text=progress_text)
 
-            # for i in range(samples_number):
-
-            #     sendToArduino(arduinoData, 'ON')
-            #     dataRead = readFromArduino(arduinoData)
-            #     current_timestamp = datetime.datetime.now()
-            #     sensor[str(current_timestamp)] = float(dataRead)
 
         else:
             st.warning('Não há dispositivos conectados.')

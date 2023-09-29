@@ -10,6 +10,7 @@ st.set_page_config(
 
 
 )
+st.markdown(" <style> div[class^='block-container st-emotion-cache-z5fcl4 ea3mdgi4'] { padding: 1rem 3rem 10rem; } </style> ", unsafe_allow_html=True)
 
 # title_alignment = """
 # <style>
