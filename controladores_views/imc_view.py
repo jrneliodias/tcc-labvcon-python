@@ -35,7 +35,7 @@ def imc_Controller_Interface():
         
         
         plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
-
+    st.write('## Índices de Desempenho')
   
 
 
@@ -74,8 +74,7 @@ def imc_siso_tab_form():
 
         with col22:
             imc_siso_multiple_reference2 = st.number_input(
-                'Referência 2:', value=30.0, step=1.0, min_value=0.0, max_value=90.0,
-                key='siso_imc_multiple_reference2')
+                'Referência 2:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='siso_imc_multiple_reference2')
 
         with col21:
             imc_siso_multiple_reference1 = st.number_input(
@@ -102,6 +101,12 @@ def imc_siso_tab_form():
             
         elif reference_number == 'Múltiplas':
             imcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,imc_sr_tau_mf1, imc_siso_multiple_reference1, imc_siso_multiple_reference2, imc_siso_multiple_reference3, siso_change_ref_instant2,siso_change_ref_instant3)
+
+
+
+
+
+
 
 def imc_mimo_tab_form():
     col21, col22, col23 = st.columns(3)
@@ -140,5 +145,5 @@ def imc_mimo_tab_form():
     if st.button('Receber Dados', type='primary', key='imc_multiples_setpoint_button'):
             
             imcControlProcessTISO(imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,
-                            change_ref_instant2, change_ref_instant3,
-                            imc_mr_tau_mf1, imc_mr_tau_mf2)
+                                    change_ref_instant2, change_ref_instant3,
+                                    imc_mr_tau_mf1, imc_mr_tau_mf2)

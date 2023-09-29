@@ -46,12 +46,12 @@ session_list = [
         "saturation_min_value",
         "process_output_sensor"]
 
-def get_session_variable(variable:str):
+def get_session_variable(variable:str)->dict:
     """
     My function with predefined options.
 
     Parameters:
-    option (str):[
+    variable (str):
         "samples_number",
         "sampling_time",
         "control_signal_1",
@@ -59,7 +59,7 @@ def get_session_variable(variable:str):
         "reference_input",
         "saturation_max_value",
         "saturation_min_value",
-        "process_output_sensor"]
+        "process_output_sensor"
     Returns:
     dict
     """
