@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import streamlit as st
 import pandas as pd
 from connections import *
-import datetime
 from session_state import get_session_variable
 
 def keys2DatetimeObj(datetime_dict):
