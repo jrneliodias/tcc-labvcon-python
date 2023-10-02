@@ -43,11 +43,12 @@ def imc_siso_tab_form():
     transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='transfer_function_type')
             
     help_text = 'Valores decimais como **0.9** ou **0.1, 0.993**. Para múltiplos valores, vírgula é necessário.'
-    num_coeff = st.text_input('Coeficientes do **Numerador** da Função de Transferência do Modelo:',key='siso_imc_num_coeff',help=help_text,placeholder='0.994')
+    st.write(' **Função de Transferência do Modelo:**')
+    num_coeff = st.text_input('Coeficientes do **Numerador** :',key='siso_imc_num_coeff',help=help_text,placeholder='0.994')
     
     coefficients_validations(num_coeff)
         
-    den_coeff = st.text_input('Coeficientes do **Denominador** da Função de Transferência do Modelo:',key='siso_imc_den_coeff',help=help_text,placeholder='1.334 , 1')
+    den_coeff = st.text_input('Coeficientes do **Denominador** :',key='siso_imc_den_coeff',help=help_text,placeholder='1.334 , 1')
     coefficients_validations(den_coeff)
     
     delay_checkbox_col, delay_input_col = st.columns(2)
@@ -58,12 +59,12 @@ def imc_siso_tab_form():
         if delay_checkbox:
             delay_input = st.number_input(label='delay',key='delay_input',label_visibility='collapsed')
             
-    reference_number = st.radio('Quantidade de referências',['Única','Múltiplas'],horizontal=True,key='reference_number')
+    reference_number = st.radio('Quantidade de referências',['Única','Múltiplas'],horizontal=True,key='imc_siso_reference_number')
     
 
     if reference_number == 'Única':
         imc_single_reference = st.number_input(
-        'Referência:', value=50, step=1, min_value=0, max_value=90, key='imc_single_reference')
+        'Referência:', value=50, step=1, min_value=0, max_value=90, key='imc_siso_single_reference')
         
     else:
         col21, col22, col23 = st.columns(3)
@@ -109,41 +110,103 @@ def imc_siso_tab_form():
 
 
 def imc_mimo_tab_form():
-    col21, col22, col23 = st.columns(3)
-    with col23:
+    
+    transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='imc_mimo_transfer_function_type')
+    
+    st.write(' **Função de Transferência do Modelo:**')        
+    help_text = 'Valores decimais como **0.9** ou **0.1, 0.993**. Para múltiplos valores, vírgula é necessário.'
+    
+    model_1_num_col, model_1_den_col = st.columns(2)
+    
+    with model_1_num_col:
 
-        imc_multiple_reference3 = st.number_input(
-            'Referência 3:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='imc_multiple_reference3')
+        num_coeff_1 = st.text_input('Coeficientes **Numerador 1**:',key='mimo_imc_num_coeff_1',help=help_text,placeholder='0.994')
+        coefficients_validations(num_coeff_1)
+    with model_1_den_col:
+        
+        den_coeff_1 = st.text_input('Coeficientes **Denominador 1**:',key='mimo_imc_den_coeff_1',help=help_text,placeholder='1.334 , 1')
+        coefficients_validations(den_coeff_1)
+    
+    delay_checkbox_col_1, delay_input_col_1 = st.columns(2)
+    with delay_checkbox_col_1:
+        delay_checkbox_1=st.checkbox('Atraso de Transporte?', key = 'imc_mimo_delay_checkbox_1')
+        
+    with delay_input_col_1:
+        if delay_checkbox_1:
+            delay_input_1 = st.number_input(label='delay',label_visibility='collapsed',key='imc_mimo_delay_input_1')
+            
+    model_2_num_col, model_2_den_col = st.columns(2)
+    
+    with model_2_num_col:
 
-    with col22:
-        imc_multiple_reference2 = st.number_input(
-            'Referência 2:', value=30.0, step=1.0, min_value=0.0, max_value=90.0,
-            key='imc_multiple_reference2')
+        num_coeff_2 = st.text_input('Coeficientes **Numerador 2**:',key='mimo_imc_num_coeff_2',help=help_text,placeholder='0.994')
+        coefficients_validations(num_coeff_2)
+    with model_2_den_col:
+        
+        den_coeff_2 = st.text_input('Coeficientes **Denominador 2**:',key='mimo_imc_den_coeff_2',help=help_text,placeholder='1.334 , 1')
+        coefficients_validations(den_coeff_2)
+        
+    delay_checkbox_col_2, delay_input_col_2 = st.columns(2)
+    with delay_checkbox_col_2:
+        delay_checkbox_2=st.checkbox('Atraso de Transporte?', key = 'imc_mimo_delay_checkbox_2')
+        
+    with delay_input_col_2:
+        if delay_checkbox_2:
+            delay_input_2 = st.number_input(label='delay',label_visibility='collapsed',key='imc_mimo_delay_input_2')
+    
+    
+    reference_number = st.radio('Quantidade de referências',['Única','Múltiplas'],horizontal=True,key='imc_mimo_reference_number')
 
-    with col21:
-        imc_multiple_reference1 = st.number_input(
-            'Referência:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='imc_multiple_reference1')
+    if reference_number == 'Única':
+        imc_single_reference = st.number_input(
+        'Referência:', value=50, step=1, min_value=0, max_value=90, key='imc_mimo_single_reference')
+    
+    elif reference_number == 'Múltiplas':
+    
+        col21, col22, col23 = st.columns(3)
+        with col23:
 
-    changeReferenceCol1, changeReferenceCol2 = st.columns(2)
+            imc_mimo_reference3 = st.number_input(
+                'Referência 3:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='imc_mimo_reference3')
 
-    with changeReferenceCol2:
-        change_ref_instant3 = st.number_input(
-            'Instante da referência 3 (s):', value=calculate_time_limit()*3/4, step=0.1, min_value=0.0, max_value=calculate_time_limit(), key='change_ref_instant3')
+        with col22:
+            imc_mimo_reference2 = st.number_input(
+                'Referência 2:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='imc_mimo_reference2')
 
-    with changeReferenceCol1:
-        change_ref_instant2 = st.number_input(
-            'Instante da referência 2 (s):', value=calculate_time_limit()/2, step=1.0, min_value=0.0, max_value=change_ref_instant3, key='change_ref_instant2')
+        with col21:
+            imc_mimo_reference1 = st.number_input(
+                'Referência:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='imc_mimo_reference1')
+
+        changeReferenceCol1, changeReferenceCol2 = st.columns(2)
+
+        with changeReferenceCol2:
+            change_ref_instant3 = st.number_input(
+                'Instante da referência 3 (s):', value=calculate_time_limit()*3/4, step=0.1, min_value=0.0, max_value=calculate_time_limit(), key='imc_mimo_change_ref_instant3')
+
+        with changeReferenceCol1:
+            change_ref_instant2 = st.number_input(
+                'Instante da referência 2 (s):', value=calculate_time_limit()/2, step=1.0, min_value=0.0, max_value=change_ref_instant3, key='imc_mimo_change_ref_instant2')
+    
     st.write('Constante de Tempo de Malha Fechada ($\\tau$)')
     tau_mf_col1, tau_mf_col2 = st.columns(2)
     with tau_mf_col1:
-        imc_mr_tau_mf1 = st.number_input(
+        imc_mimo_tau_mf1 = st.number_input(
             '$\\tau_1$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='imc_mr_tau_mf1')
     with tau_mf_col2:
-        imc_mr_tau_mf2 = st.number_input(
+        imc_mimo_tau_mf2 = st.number_input(
             '$\\tau_2$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='imc_mr_tau_mf2')
 
-    if st.button('Receber Dados', type='primary', key='imc_multiples_setpoint_button'):
+    if st.button('Receber Dados', type='primary', key='imc_mimo_setpoint_button'):
             
-            imcControlProcessTISO(imc_multiple_reference1, imc_multiple_reference2, imc_multiple_reference3,
-                                    change_ref_instant2, change_ref_instant3,
-                                    imc_mr_tau_mf1, imc_mr_tau_mf2)
+            
+        if reference_number == 'Única':
+            
+            imcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
+                                  imc_mimo_tau_mf1,imc_mimo_tau_mf2, 
+                                  imc_single_reference, imc_single_reference, imc_single_reference)
+            
+        elif reference_number == 'Múltiplas':
+            imcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
+                                  imc_mimo_tau_mf1,imc_mimo_tau_mf2, 
+                                  imc_mimo_reference1, imc_mimo_reference2,imc_mimo_reference3,
+                                  change_ref_instant2,change_ref_instant3)

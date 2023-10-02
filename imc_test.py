@@ -90,7 +90,7 @@ while interation < samples_number:
     if current_time - start_time > sampling_time:
         start_time = current_time
         # -----  Angle Sensor Output
-        angulo_sensor[interation] = float(readFromArduino(arduinoData))
+        angulo_sensor[interation] = readFromArduino(arduinoData)
 
         # ---- Motor Model Output
         angulo_model1[interation] = -a1m1 * angulo_model1[interation-1] + b0m1*pot_motor_1[interation-1]
