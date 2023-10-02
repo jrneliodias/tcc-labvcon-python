@@ -35,12 +35,12 @@ def mainSidebarMenu():
     with col1:
         sampling_time_input = st.number_input(
             'Tempo de amostragem (s):',
-            value=0.1,
+            value=0.01,
             min_value=0.005)
         
       
         
-        saturation_min_value = st.number_input('Saturação mínima:',value=0,
+        saturation_min_value = st.number_input('**Saturação mínima**:'.upper(),value=0,
             min_value=0)
         
         st.session_state.controller_parameters['saturation_min_value'] = saturation_min_value
@@ -50,9 +50,9 @@ def mainSidebarMenu():
     with col2:
 
         samples_number = st.number_input(
-            'Quantidade de amostras:', value=100, step=10, min_value=1)
+            'Quantidade de amostras:', value=1000, step=10, min_value=1)
         
-        saturation_max_value = st.number_input('Saturação Máxima:',value=15,
+        saturation_max_value = st.number_input('**Saturação Máxima**:'.upper(),value=15,
             min_value=0)
         
         st.session_state.controller_parameters['saturation_max_value'] = saturation_max_value
@@ -60,4 +60,4 @@ def mainSidebarMenu():
         if samples_number:
             st.session_state.controller_parameters['samples_number'] = samples_number
             
-    st.write(f'## Tempo total de Simulação:   {sampling_time_input*samples_number:.2f} s')
+    st.write(f'## Tempo total de Simulação:  {sampling_time_input*samples_number:.2f} s')
