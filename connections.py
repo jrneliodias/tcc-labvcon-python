@@ -51,7 +51,7 @@ def readFromArduino(arduinoData):
     # ts = st.session_state.sampling_time
     # time.sleep(ts)
     dataRead, *_ = arduinoData.readline().decode().split('\r\n')
-    return dataRead
+    return float(dataRead)
 
 
 def serialPortValidationToConnect(port_option,baudrate_connection):
