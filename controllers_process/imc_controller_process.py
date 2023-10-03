@@ -247,15 +247,12 @@ def imcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     
     # print(A_coeff)
     # print(B_coeff)
-    A_order = len(A_coeff_2)-1
-    B_order = len(B_coeff_2) # Zero holder aumenta um grau
-
-
+    
     # Close Loop Tau Calculation
     tau_mf1 = imc_mr_tau_mf1
     alpha1 = exp(-sampling_time/tau_mf1)
 
-    tau_mf2 = imc_mr_tau_mf1
+    tau_mf2 = imc_mr_tau_mf2
     alpha2 = exp(-sampling_time/tau_mf2)
     
     # Perform polynomial multiplication using np.convolve
@@ -323,10 +320,8 @@ def imcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
                 
             # ---- Motor Model Output
             elif kk == 1 and A_order == 1:
-                model_output_1[kk] = dot(-A_coeff_1[1:], model_output_1[kk-1::-1])\
-                                        + dot(B_coeff_1, manipulated_variable_1[kk-1::-1])
-                model_output_2[kk] = dot(-A_coeff_2[1:], model_output_2[kk-1::-1])\
-                                        + dot(B_coeff_2, manipulated_variable_2[kk-1::-1])
+                model_output_1[kk] = dot(-A_coeff_1[1:], model_output_1[kk-1::-1]) + dot(B_coeff_1, manipulated_variable_1[kk-1::-1])
+                model_output_2[kk] = dot(-A_coeff_2[1:], model_output_2[kk-1::-1]) - dot(B_coeff_2, manipulated_variable_2[kk-1::-1])
                 
                 # Determine uncertainty
                 output_model_comparation_1[kk] = process_output[kk] - model_output_1[kk]
@@ -334,13 +329,13 @@ def imcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
 
                 # Determine Error
                 erro1[kk] = reference_input[kk] - output_model_comparation_1[kk]
-                erro2[kk] = -(reference_input[kk] - output_model_comparation_2[kk])
+                erro2[kk] = -(reference_input[kk] + output_model_comparation_2[kk])
 
                 # Control Signal
-                manipulated_variable_1[kk] = dot(-B_delta_1[1:],manipulated_variable_1[kk-1::-1])+ (1-alpha1)*dot(A_coeff_1,erro1[kk::-1])
+                manipulated_variable_1[kk] = dot(-B_delta_1[1:],manipulated_variable_1[kk-1::-1]) + (1-alpha1)*dot(A_coeff_1,erro1[kk::-1])
                 manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta_1[0]
                 
-                manipulated_variable_2[kk] = dot(-B_delta_2[1:],manipulated_variable_2[kk-1::-1])+ (1-alpha2)*dot(A_coeff_2,erro1[kk::-1])
+                manipulated_variable_2[kk] = dot(-B_delta_2[1:],manipulated_variable_2[kk-1::-1]) + (1-alpha2)*dot(A_coeff_2,erro2[kk::-1])
                 manipulated_variable_2[kk] = manipulated_variable_2[kk]/B_delta_2[0]
                 
                 # Control Signal Saturation
@@ -349,7 +344,7 @@ def imcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
             
 
                 # Motor Power String Formatation
-                motors_power_packet = f"{manipulated_variable_1[kk],manipulated_variable_2[kk]}\r"
+                motors_power_packet = f"{manipulated_variable_1[kk]},{manipulated_variable_2[kk]}\r"
 
                 sendToArduino(arduinoData, motors_power_packet)
                 
@@ -364,10 +359,8 @@ def imcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
                 my_bar.progress(percent_complete, text=progress_text)
                 
             elif kk > A_order:
-                model_output_1[kk] = dot(-A_coeff_1[1:], model_output_1[kk-1:kk-A_order-1:-1])\
-                                        + dot(B_coeff_1, manipulated_variable_1[kk-1:kk-B_order-1:-1])
-                model_output_2[kk] = dot(-A_coeff_2[1:], model_output_2[kk-1:kk-A_order-1:-1])\
-                                        + dot(B_coeff_2, manipulated_variable_2[kk-1:kk-B_order-1:-1])
+                model_output_1[kk] = dot(-A_coeff_1[1:], model_output_1[kk-1:kk-A_order-1:-1]) + dot(B_coeff_1, manipulated_variable_1[kk-1:kk-B_order-1:-1])
+                model_output_2[kk] = dot(-A_coeff_2[1:], model_output_2[kk-1:kk-A_order-1:-1]) - dot(B_coeff_2, manipulated_variable_2[kk-1:kk-B_order-1:-1])
                 
                 # Determine uncertainty
                 output_model_comparation_1[kk] = process_output[kk] - model_output_1[kk]
@@ -375,13 +368,13 @@ def imcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
 
                 # Determine Error
                 erro1[kk] = reference_input[kk] - output_model_comparation_1[kk]
-                erro2[kk] = -(reference_input[kk] - output_model_comparation_2[kk])
+                erro2[kk] = -(reference_input[kk] + output_model_comparation_2[kk])
 
                 # Control Signal
-                manipulated_variable_1[kk] = dot(-B_delta_1[1:],manipulated_variable_1[kk-1::-1])+ (1-alpha1)*dot(A_coeff_1,erro1[kk::-1])
+                manipulated_variable_1[kk] = dot(-B_delta_1[1:],manipulated_variable_1[kk-1:kk-B_order-1:-1]) + (1-alpha1)*dot(A_coeff_1,erro1[kk:kk-A_order-1:-1])
                 manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta_1[0]
                 
-                manipulated_variable_2[kk] = dot(-B_delta_2[1:],manipulated_variable_2[kk-1::-1])+ (1-alpha2)*dot(A_coeff_2,erro1[kk::-1])
+                manipulated_variable_2[kk] = dot(-B_delta_2[1:],manipulated_variable_2[kk-1:kk-B_order-1:-1])+ (1-alpha2)*dot(A_coeff_2,erro2[kk:kk-A_order-1:-1])
                 manipulated_variable_2[kk] = manipulated_variable_2[kk]/B_delta_2[0]
                 
                 # Control Signal Saturation
@@ -390,7 +383,7 @@ def imcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
             
 
                 # Motor Power String Formatation
-                motors_power_packet = f"{manipulated_variable_1[kk],manipulated_variable_2[kk]}\r"
+                motors_power_packet = f"{manipulated_variable_1[kk]},{manipulated_variable_2[kk]}\r"
 
                 sendToArduino(arduinoData, motors_power_packet)
                 

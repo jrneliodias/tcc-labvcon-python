@@ -33,8 +33,15 @@ def imc_Controller_Interface():
         control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
         control_signal_1_dataframe = dictionary_to_pandasDataframe(control_signal_with_elapsed_time,'Control Signal 1')
         
-        
         plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
+        
+        control_signal_2_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_2')
+        control_signal_2_dataframe = dictionary_to_pandasDataframe(control_signal_2_with_elapsed_time,'Control Signal 2')
+        
+        plot_chart_validation(control_signal_2_dataframe, x = 'Time (s)', y = 'Control Signal 2',height=200)
+        
+        
+        
     st.write('## Índices de Desempenho')
   
 
