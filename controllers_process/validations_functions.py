@@ -3,7 +3,7 @@ from formatterInputs import *
 from control.matlab import tf, c2d, tfdata
 from connections import *
 from session_state import get_session_variable
-
+from controllers_process.performace_metrics import *
     
 def coefficients_validations(coeff_string):
     if  coeff_string == '':
@@ -71,4 +71,15 @@ def string2floatArray(input_numbers_str:str) -> list[float] | float:
     else:
         return float(input_numbers_str)
     
+
+
+def iae_metric_validation():
+    if not get_session_variable('reference_input'):
+        return None
+    if not get_session_variable('process_output_sensor'):
+        return None
+    
+    iae_metric = integrated_absolute_error()
+
+    return st.metric('Integrated Absolute Error', f'{iae_metric:.2f}',delta=0.1)
     

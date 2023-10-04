@@ -42,8 +42,9 @@ def imc_Controller_Interface():
         
         
         
-    st.write('## Índices de Desempenho')
-  
+    st.write('### Índices de Desempenho')
+    iae_metric_validation()
+    
 
 
 def imc_siso_tab_form():
