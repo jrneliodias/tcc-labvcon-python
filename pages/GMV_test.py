@@ -1,7 +1,7 @@
 
-from formatterInputs import *
+
 from control.matlab import tf, c2d, tfdata
-from numpy import exp, ones, zeros,arange,dot,convolve
+import numpy as np
 from connections import *
 import matplotlib.pyplot as plt
 
@@ -14,35 +14,26 @@ sampling_time = 0.01
 samples_number = 2000
 
 # Initial Conditions
-angulo_sensor = zeros(samples_number)
-angulo_model1 = zeros(samples_number)
-angulo_model2 = zeros(samples_number)
-erro1 = zeros(samples_number)
-erro2 = zeros(samples_number)
-d0barra1 = zeros(samples_number)
-d0barra2 = zeros(samples_number)
+output_sensor = np.zeros(samples_number)
+delta_control_signal = np.zeros(samples_number)
 
-# taumf1 e taumf2 Ajusts
-ajuste1 = 1
-ajuste2 = 1
 
 # Setpoint
-angulo_ref = 30*ones(samples_number)
-angulo_ref[1000:] = 70
+reference = 50*np.ones(samples_number)
+#reference[1000:] = 70
 
 # Power Saturation
-max_pot = 15
-min_pot = 7
+max_pot = 200
+min_pot = -200
 
 # Variável controlada
-pot_motor_1 = zeros(samples_number)
-pot_motor_2 = zeros(samples_number)
-motors_power_packet = ["0,0"]*samples_number
+control_signal = np.zeros(samples_number)
+motors_power_packet = ["0"]*samples_number
 
 # Coefiientes do Modelo Smith motor 1
-Kpsmith1 = 7.737
+Kpsmith1 = 0.999 #7.737
 thetasmith1 = 0.65
-tausmith1 = 0.6
+tausmith1 = 1.334 #0.6
 
 # Coefiientes do Modelo Smith motor 2
 Kpsmith2 = 12.86
@@ -60,86 +51,130 @@ A_order = len(Am1)-1
 B_order = len(Bm1) # Zero holder aumenta um grau
 
 # Motor 2 Model Transfer Function
-Gm2 = tf(Kpsmith2, [tausmith2, 1])
-Gmz2 = c2d(Gm2, sampling_time)
-num2, den2 = tfdata(Gmz2)
-Bm2 = num2[0][0]
-Am2 = den2[0][0]
+# Gm2 = tf(Kpsmith2, [tausmith2, 1])
+# Gmz2 = c2d(Gm2, sampling_time)
+# num2, den2 = tfdata(Gmz2)
+# Bm2 = num2[0][0]
+# Am2 = den2[0][0]
 
 
-# Close Loop Tau Calculation
-tau_mf1 = ajuste1*tausmith1
-alpha1 = exp(-sampling_time/tau_mf1)
-alpha_delta_1 = [1,-alpha1]
-B_delta_1 = convolve(Bm1,alpha_delta_1)
+# Determinar E(z^-1) e S(z^-1)
+# na = 1;
+# nb = 0;
+# ns = na;
+# ne = d-1;
+# E(z^-1) = e0
+# S(z^-1) = s0 + s1*z^-1
 
-tau_mf2 = ajuste2*tausmith2
-alpha2 = exp(-sampling_time/tau_mf2)
-alpha_delta_2 = [1,-alpha2]
-B_delta_2 = convolve(Bm2,alpha_delta_2)
+# Identidade Polinomial
+# P(z^-1) = A(z^-1)Delta E(z^-1) + z^-d S(z^-1)
+# P(z^-1) = 1
+
+
+# Projeto do GMV motor 1
+
+def create_P1_poly(ne,ns):
+    P1 = np.zeros((ne + ns + 2,1))
+    P1[0] = 1
+    P1[1] = -0.98
+    return P1
+
+
+def E_S_poly_calculation(ne,ns,Am1,P):
+    delta = [1, -1]
+    Am1_barra1 = np.convolve(Am1, delta)
+    mat_Scoef1 = np.vstack((np.zeros((ne+1,ns+1)), np.eye(ns+1)))
+    mat_EAcoef1= np.zeros((ne + ns + 2, ne+1))
+
+    am1_barra_len = len(Am1_barra1)
+
+    for k in range(ne+1):
+        mat_EAcoef1[k:k+am1_barra_len,k] = Am1_barra1.T
+
+    mat_SEcoef1 = np.concatenate((mat_EAcoef1,mat_Scoef1),axis=1)  
+
+    mat_SEcoef1_inv = np.linalg.inv(mat_SEcoef1)
+    EScoef1_array = np.dot(mat_SEcoef1_inv,P)
+
+
+    epoly1 = EScoef1_array[0:ne1+1].T[0]
+    spoly1 = EScoef1_array[ne1+1:].T[0]
+    return epoly1,spoly1
+
+
+# Calculo do polinômio R1(z^-1)
+def r_poly_calculation(Bm1,epoly1,q0):
+    BE_poly = np.convolve(Bm1,epoly1)
+    rpoly1 = BE_poly + q0
+    return rpoly1
+
+d = 1
+na1 = A_order
+nb1 = B_order
+ns1 = na1
+ne1 = d-1
+
+q01 = 1
+
+# Definir o polinômio P1(z)
+P1 = create_P1_poly(ne1,ns1)
+
+# Encontrar o polinômio E1(z) e S1(z)
+e_poly_1,s_poly_1 = E_S_poly_calculation(ne1,ns1,Am1,P1)
+
+# Encontrar o polinômio R por meio do Q1(z^-1) e B1(z^-1)
+r_poly_1 = r_poly_calculation(Bm1,e_poly_1,q01)
+nr1 = len(r_poly_1)-1
+
+# Calculo do polinômio T1(z)
+t01 = sum(P1)[0];
+
 
 # inicializar  o timer
 start_time = time.time()
-interation = 2
+kk = 2
+
 
 if st.button('Iniciar Simulação'):
     
-    sendToArduino(arduinoData, '0,0')
+    sendToArduino(arduinoData, '0')
 
-    while interation < samples_number:
+    while kk < samples_number:
         current_time = time.time()
         if current_time - start_time > sampling_time:
             start_time = current_time
             # -----  Angle Sensor Output
-            angulo_sensor[interation] = readFromArduino(arduinoData)
+            output_sensor[kk] = readFromArduino(arduinoData)
 
-            # ---- Motor Model Output
-            angulo_model1[interation] = dot(-Am1[1:], angulo_model1[interation-1:interation-A_order-1:-1]) + dot(Bm1,pot_motor_1[interation-1:interation-B_order-1:-1])
-            angulo_model2[interation] =  dot(-Am2[1:], angulo_model2[interation-1:interation-A_order-1:-1]) - dot(Bm2,pot_motor_2[interation-1:interation-B_order-1:-1])
+            # GMV Control Signal
+            delta_control_signal[kk] = (t01*reference[kk] - np.dot(s_poly_1,output_sensor[kk:kk-ns1-1:-1]))/r_poly_1[0]
 
-            # Determine uncertainty
-            d0barra1[interation] =    angulo_sensor[interation] - angulo_model1[interation]
-            d0barra2[interation] = - (angulo_sensor[interation] - angulo_model2[interation])
-
-            # Determine Error
-            erro1[interation] =    angulo_ref[interation] - d0barra1[interation]
-            erro2[interation] = - (angulo_ref[interation] + d0barra2[interation])
-
-            # Control Signal
-            pot_motor_1[interation] = dot(-B_delta_1[1:],pot_motor_1[interation-1:interation-B_order-1:-1]) + (1-alpha1)*dot(Am1,erro1[interation:interation-A_order-1:-1])
+            control_signal[kk] = control_signal[kk-1] +  delta_control_signal[kk]
             
-            pot_motor_1[interation] = pot_motor_1[interation]/B_delta_1[0]
-
-            pot_motor_2[interation] = dot(-B_delta_2[1:],pot_motor_2[interation-1:interation-B_order-1:-1]) + (1-alpha2)*dot(Am2,erro2[interation:interation-A_order-1:-1])
-            
-            pot_motor_2[interation] = pot_motor_2[interation]/B_delta_2[0]
-
             # Control Signal Saturation
-            pot_motor_1[interation] = max(min_pot, min(pot_motor_1[interation], max_pot))
-            pot_motor_2[interation] = max(min_pot, min(pot_motor_2[interation], max_pot))
+            control_signal[kk] = max(min_pot, min(control_signal[kk], max_pot))
 
             # Motor Power String Formatation
-            motors_power_packet[interation] = f"{pot_motor_1[interation]},{pot_motor_2[interation]}\r"
+            motors_power_packet[kk] = f"{control_signal[kk]}\r"
 
             # Clean Sensor Data
-            if angulo_sensor[interation] <= 0 or angulo_sensor[interation] > 90:
-                angulo_sensor[interation] = angulo_sensor[interation-1]
+            if output_sensor[kk] <= 0 or output_sensor[kk] > 90:
+                output_sensor[kk] = output_sensor[kk-1]
 
-            sendToArduino(arduinoData, motors_power_packet[interation])
+            sendToArduino(arduinoData, motors_power_packet[kk])
             
-            
-            interation += 1
+            kk += 1
 
 
-    sendToArduino(arduinoData, '0,0')
+    sendToArduino(arduinoData, '0')
 
     ### Plotar os Resultados 
 
-    time_interval = arange(0,samples_number*sampling_time,sampling_time)
+    time_interval = np.arange(0,samples_number*sampling_time,sampling_time)
 
     fig, ax = plt.subplots()
-    ax.plot(time_interval, angulo_sensor,label='Resposta do sistema')
-    ax.plot(time_interval, angulo_ref,linestyle='--',label='Referência')
+    ax.plot(time_interval, output_sensor,label='Resposta do sistema')
+    ax.plot(time_interval, reference,linestyle='--',label='Referência')
     ax.legend()
     ax.set_xlabel('Tempo (s)')
     ax.set_ylabel('Ângulo (º)')
@@ -154,18 +189,18 @@ if st.button('Iniciar Simulação'):
     fig_control_signal, axes = plt.subplots(nrows=2, ncols=1)
     plt.subplots_adjust(hspace=0.8)  # Increase the horizontal spacing
     # Plot data on the first subplot (left)
-    axes[0].plot(time_interval, pot_motor_1, label='Motor 1')
+    axes[0].plot(time_interval, control_signal, label='Motor 1')
     axes[0].set_title('Sinal de Controle - Motor 1')
     axes[0].set_ylabel('PWM BW (%)')
     axes[0].set_xlabel('Tempo (s)')
-    axes[0].set_ylim([6,16])
+    #axes[0].set_ylim([6,16])
 
     # Plot data on the second subplot (right)
-    axes[1].plot(time_interval, pot_motor_2, label='Motor 2', color='red')
+    axes[1].plot(time_interval, control_signal, label='Motor 2', color='red')
     axes[1].set_title('Sinal de Controle - Motor 2')
     axes[1].set_ylabel('PWM BW (%)')
     axes[1].set_xlabel('Tempo (s)')
-    axes[1].set_ylim([6,16])
+    #axes[1].set_ylim([6,16])
 
     # Add legends to each subplot
     axes[0].legend()
