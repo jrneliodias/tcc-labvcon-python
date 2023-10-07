@@ -43,7 +43,12 @@ def imc_Controller_Interface():
         
         
     st.write('### Índices de Desempenho')
-    iae_metric_validation()
+    
+    iae_col, tvc_col = st.columns([0.2,0.8])
+    with iae_col:
+        iae_metric_validation()
+    with tvc_col:
+        tvc1_validation()
     
 
 
@@ -128,11 +133,11 @@ def imc_mimo_tab_form():
     
     with model_1_num_col:
 
-        num_coeff_1 = st.text_input('Coeficientes **Numerador 1**:',key='mimo_imc_num_coeff_1',help=help_text,placeholder='0.994')
+        num_coeff_1 = st.text_input('Coeficientes **Numerador 1**:',key='mimo_imc_num_coeff_1',help=help_text,placeholder='7.737')
         coefficients_validations(num_coeff_1)
     with model_1_den_col:
         
-        den_coeff_1 = st.text_input('Coeficientes **Denominador 1**:',key='mimo_imc_den_coeff_1',help=help_text,placeholder='1.334 , 1')
+        den_coeff_1 = st.text_input('Coeficientes **Denominador 1**:',key='mimo_imc_den_coeff_1',help=help_text,placeholder='0.6 , 1')
         coefficients_validations(den_coeff_1)
     
     delay_checkbox_col_1, delay_input_col_1 = st.columns(2)
@@ -147,11 +152,11 @@ def imc_mimo_tab_form():
     
     with model_2_num_col:
 
-        num_coeff_2 = st.text_input('Coeficientes **Numerador 2**:',key='mimo_imc_num_coeff_2',help=help_text,placeholder='0.994')
+        num_coeff_2 = st.text_input('Coeficientes **Numerador 2**:',key='mimo_imc_num_coeff_2',help=help_text,placeholder='12.86')
         coefficients_validations(num_coeff_2)
     with model_2_den_col:
         
-        den_coeff_2 = st.text_input('Coeficientes **Denominador 2**:',key='mimo_imc_den_coeff_2',help=help_text,placeholder='1.334 , 1')
+        den_coeff_2 = st.text_input('Coeficientes **Denominador 2**:',key='mimo_imc_den_coeff_2',help=help_text,placeholder='0.66 , 1')
         coefficients_validations(den_coeff_2)
         
     delay_checkbox_col_2, delay_input_col_2 = st.columns(2)
