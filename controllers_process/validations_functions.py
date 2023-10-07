@@ -79,7 +79,29 @@ def iae_metric_validation():
     if not get_session_variable('process_output_sensor'):
         return None
     
+    previous_iae_metric = get_session_variable('iae_metric')
     iae_metric = integrated_absolute_error()
+    delta_iae = iae_metric-previous_iae_metric
+    st.session_state.controller_parameters['iae_metric'] = iae_metric
 
-    return st.metric('Integrated Absolute Error', f'{iae_metric:.2f}',delta=0.1)
+    return st.metric('Integrated Absolute Error', f'{iae_metric:.2f}',delta=f'{delta_iae:.3f}')
     
+
+def tvc1_validation():
+    if not get_session_variable('control_signal_1'):
+        return None
+    
+    previous_tvc1= get_session_variable('tvc_1_metric')
+    total_variation_control_1 = total_variation_control('control_signal_1')
+    delta_tvc1 = total_variation_control_1-previous_tvc1
+    st.session_state.controller_parameters['tvc_1_metric'] = total_variation_control_1
+     
+    if not get_session_variable('control_signal_2'):
+        return st.metric('Total Variation Control 1', f'{total_variation_control_1:.2f}',delta=f'{delta_tvc1:.3f}')
+    previous_tvc2= get_session_variable('tvc_2_metric')
+    total_variation_control_2 = total_variation_control('control_signal_2')
+    delta_tvc2 = total_variation_control_2-previous_tvc2
+    st.session_state.controller_parameters['tvc_2_metric'] = total_variation_control_1
+    
+    return st.metric('Total Variation Control 1', f'{total_variation_control_1:.2f}',delta=f'{delta_tvc1:.3f}'), \
+           st.metric('Total Variation Control 2', f'{total_variation_control_2:.2f}',delta=f'{delta_tvc2:.3f}')

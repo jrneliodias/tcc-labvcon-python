@@ -35,6 +35,15 @@ def loadSessionStates():
     if 'process_output_sensor' not in st.session_state.controller_parameters:
         st.session_state.controller_parameters['process_output_sensor'] = {}
     
+    if 'iae_metric' not in st.session_state.controller_parameters:
+        st.session_state.controller_parameters['iae_metric'] = 0
+    
+    if 'tvc_1_metric' not in st.session_state.controller_parameters:
+        st.session_state.controller_parameters['tvc_1_metric'] = 0
+        
+    if 'tvc_2_metric' not in st.session_state.controller_parameters:
+        st.session_state.controller_parameters['tvc_2_metric'] = 0
+    
 
 session_list = [
         "samples_number",
@@ -44,9 +53,13 @@ session_list = [
         "reference_input",
         "saturation_max_value",
         "saturation_min_value",
-        "process_output_sensor"]
+        "process_output_sensor",
+        "iae_metric",
+        "tvc_1_metric",
+        "tvc_2_metric"
+        ]
 
-def get_session_variable(variable:str)->dict:
+def get_session_variable(variable:str)-> dict|float:
     """
     My function with predefined options.
 
@@ -74,6 +87,9 @@ def get_session_variable(variable:str)->dict:
         "saturation_max_value":     st.session_state.controller_parameters['saturation_max_value'],
         "saturation_min_value":     st.session_state.controller_parameters['saturation_min_value'],
         "process_output_sensor":    st.session_state.controller_parameters['process_output_sensor'],
+        "iae_metric":               st.session_state.controller_parameters['iae_metric'],
+        "tvc_1_metric":             st.session_state.controller_parameters['tvc_1_metric'],
+        "tvc_2_metric":             st.session_state.controller_parameters['tvc_2_metric'],
     }
     
     return session_variable[variable]
