@@ -5,8 +5,9 @@ def integrated_absolute_error()->float:
     reference_input = get_session_variable('reference_input') 
     process_output_sensor_dict = get_session_variable('process_output_sensor').values() 
     process_output_sensor = np.array(list(process_output_sensor_dict))
+    process_output_sensor_length = len(process_output_sensor)
     # Calculate absolute difference element-wise
-    absolute_error = np.abs(reference_input - process_output_sensor)
+    absolute_error = np.abs(reference_input[:process_output_sensor_length] - process_output_sensor)
     sum_absolute_error = np.sum(absolute_error)
     return sum_absolute_error
     
