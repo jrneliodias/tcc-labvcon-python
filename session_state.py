@@ -94,7 +94,7 @@ def get_session_variable(variable:str)-> dict|float:
     
     return session_variable[variable]
 
-def set_session_variable(controller_parameter:str, new_data) ->None:
+def set_session_controller_parameter(controller_parameter:str, new_data) ->None:
     """
     Function to get the session states controller parameters variables
 

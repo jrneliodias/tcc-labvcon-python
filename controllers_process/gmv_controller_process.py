@@ -3,7 +3,7 @@ from formatterInputs import *
 import numpy as np
 from connections import *
 import datetime
-from session_state import get_session_variable
+from session_state import get_session_variable, set_session_controller_parameter
 from controllers_process.validations_functions import *
 
 
@@ -124,13 +124,15 @@ def gmvControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
     t01 = sum(P1)[0]
     
 
-    # clear previous control signal values
-    st.session_state.controller_parameters['control_signal_1']= dict()
-    control_signal_1 = st.session_state.controller_parameters['control_signal_1']
     
     # clear previous control signal values
-    st.session_state.controller_parameters['process_output_sensor'] = dict()
-    process_output_sensor = st.session_state.controller_parameters['process_output_sensor']
+    set_session_controller_parameter('control_signal_1',dict())
+    control_signal_1 = get_session_variable('control_signal_1')
+    
+
+    # clear previous control signal values
+    set_session_controller_parameter('process_output_sensor',dict())
+    process_output_sensor = get_session_variable('process_output_sensor')
 
     # inicializar  o timer
     start_time = time.time()
@@ -324,17 +326,17 @@ def gmvControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
 
     
     # clear previous control signal values
-    st.session_state.controller_parameters['control_signal_1']= dict()
-    control_signal_1 = st.session_state.controller_parameters['control_signal_1']
+    set_session_controller_parameter('control_signal_1',dict())
+    control_signal_1 = get_session_variable('control_signal_1')
     
     
     # clear previous control signal values
-    st.session_state.controller_parameters['control_signal_2']= dict()
-    control_signal_2 = st.session_state.controller_parameters['control_signal_2']
+    set_session_controller_parameter('control_signal_2',dict())
+    control_signal_2 = get_session_variable('control_signal_2')
     
     # clear previous control signal values
-    st.session_state.controller_parameters['process_output_sensor'] = dict()
-    process_output_sensor = st.session_state.controller_parameters['process_output_sensor']
+    set_session_controller_parameter('process_output_sensor',dict())
+    process_output_sensor = get_session_variable('process_output_sensor')
     
     
     # inicializar  o timer
