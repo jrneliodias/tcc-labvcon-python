@@ -61,7 +61,7 @@ session_list = [
 
 def get_session_variable(variable:str)-> dict|float:
     """
-    My function with predefined options.
+    Function to get the session states variables
 
     Parameters:
     variable (str):
@@ -94,3 +94,22 @@ def get_session_variable(variable:str)-> dict|float:
     
     return session_variable[variable]
 
+def set_session_variable(controller_parameter:str, new_data) ->None:
+    """
+    Function to get the session states controller parameters variables
+
+    Parameters:
+    variable (str):
+        "samples_number",
+        "sampling_time",
+        "control_signal_1",
+        "control_signal_2",
+        "reference_input",
+        "saturation_max_value",
+        "saturation_min_value",
+        "process_output_sensor"
+    Returns:
+    None
+    """
+    st.session_state.controller_parameters[controller_parameter] = new_data
+   
