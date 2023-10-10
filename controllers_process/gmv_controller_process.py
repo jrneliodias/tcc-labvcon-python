@@ -321,9 +321,6 @@ def gmvControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     t02 = sum(P2)[0]
     
 
-    # limpar os valores anteriores do sensor
-    st.session_state.sensor = dict()
-    sensor = st.session_state.sensor
 
     
     # clear previous control signal values
