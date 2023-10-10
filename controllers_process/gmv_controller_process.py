@@ -1,14 +1,52 @@
 import streamlit as st
 from formatterInputs import *
-from numpy import exp, ones, zeros,array, dot, convolve
+import numpy as np
 from connections import *
 import datetime
 from session_state import get_session_variable
 from controllers_process.validations_functions import *
 
 
+def create_P1_poly(ne,ns,filter=False):
+    P1 = np.zeros((ne + ns + 2,1))
+    P1[0] = 1
+    if filter:
+        P1[1] = -0.98
+    return P1
+
+
+def E_S_poly_calculation(ne,ns,Am1,P):
+    delta = [1, -1]
+    Am1_barra1 = np.convolve(Am1, delta)
+    mat_Scoef1 = np.vstack((np.zeros((ne+1,ns+1)), np.eye(ns+1)))
+    mat_EAcoef1= np.zeros((ne + ns + 2, ne+1))
+
+    am1_barra_len = len(Am1_barra1)
+
+    for k in range(ne+1):
+        mat_EAcoef1[k:k+am1_barra_len,k] = Am1_barra1.T
+
+    mat_SEcoef1 = np.concatenate((mat_EAcoef1,mat_Scoef1),axis=1)  
+
+    mat_SEcoef1_inv = np.linalg.inv(mat_SEcoef1)
+    EScoef1_array = np.dot(mat_SEcoef1_inv,P)
+
+
+    epoly1 = EScoef1_array[0:ne+1].T[0]
+    spoly1 = EScoef1_array[ne+1:].T[0]
+    return epoly1,spoly1
+
+
+# Calculo do polinômio R1(z^-1)
+def r_poly_calculation(Bm1,epoly1,q0):
+    BE_poly = np.convolve(Bm1,epoly1)
+    BE_poly[0] += q0
+    rpoly1 = BE_poly
+    return rpoly1
+
+
 def gmvControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str,
-                          gmv_mr_tau_mf1:float, 
+                          gmv_q01:float, 
                           gmv_multiple_reference1:float, gmv_multiple_reference2:float, gmv_multiple_reference3:float,
                           change_ref_instant2 = 1, change_ref_instant3 = 1):
     
@@ -21,20 +59,24 @@ def gmvControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
     # Receber os valores de tempo de amostragem e número de amostras da sessão
     sampling_time = get_session_variable('sampling_time')
     samples_number = get_session_variable('samples_number')
+    
+    if 'arduinoData' not in st.session_state.connected:
+        return st.warning('Arduino não conectado!')
+    
+    # Receber o objeto arduino da sessão
+    arduinoData = st.session_state.connected['arduinoData']
 
     # gmv Controller Project
 
     # Initial Conditions
-    process_output = zeros(samples_number)
-    model_output_1 = zeros(samples_number)
-    erro1 = zeros(samples_number)
-    output_model_comparation = zeros(samples_number)
+    process_output = np.zeros(samples_number)
+    delta_control_signal = np.zeros(samples_number)
 
     # Take the index of time to change the referencee
     instant_sample_2 = get_sample_position(sampling_time, samples_number, change_ref_instant2)
     instant_sample_3 = get_sample_position(sampling_time, samples_number, change_ref_instant3)
 
-    reference_input = gmv_multiple_reference1*ones(samples_number)
+    reference_input = gmv_multiple_reference1*np.ones(samples_number)
     reference_input[instant_sample_2:instant_sample_3] = gmv_multiple_reference2
     reference_input[instant_sample_3:] = gmv_multiple_reference3
     
@@ -45,8 +87,8 @@ def gmvControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
     min_pot = get_session_variable('saturation_min_value')
 
     # Manipulated variable
-    manipulated_variable_1 = zeros(samples_number)
-    motors_power_packet = "0"
+    manipulated_variable_1 = np.zeros(samples_number)
+    serial_data_pack = "0"
 
     # Model transfer Function
     A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff,transfer_function_type)
@@ -54,20 +96,33 @@ def gmvControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
     # print(A_coeff)
     # print(B_coeff)
     A_order = len(A_coeff)-1
-    B_order = len(B_coeff) # Zero holder aumenta um grau
-    
+    B_order = len(B_coeff)-1 
     # Close Loop Tau Calculation
     # tau_mf1 = ajuste1*tausmith1
-    tau_mf1 = gmv_mr_tau_mf1
-    alpha1 = exp(-sampling_time/tau_mf1)
-    
-    # Perform polynomial multiplication using np.convolve
-    alpha_delta = [1,-alpha1]
-    B_delta = convolve(B_coeff,alpha_delta)
+    q01 = gmv_q01
     
     
-    # Receive the Arduino object from the session
-    arduinoData = st.session_state.connected['arduinoData']
+    d = 1
+    na1 = A_order
+    nb1 = B_order
+    ns1 = na1
+    ne1 = d-1
+
+
+    # Definir o polinômio P1(z)
+    P1 = create_P1_poly(ne1,ns1)
+    # Encontrar o polinômio E1(z) e S1(z)
+    e_poly_1,s_poly_1 = E_S_poly_calculation(ne1,ns1,A_coeff,P1)
+    
+        
+    # Encontrar o polinômio R por meio do Q1(z^-1) e B1(z^-1)
+    r_poly_1 = r_poly_calculation(B_coeff,e_poly_1,q01)
+    nr1 = len(r_poly_1)-1
+
+    
+    # Calculo do polinômio T1(z)
+    t01 = sum(P1)[0]
+    
 
     # clear previous control signal values
     st.session_state.controller_parameters['control_signal_1']= dict()
@@ -114,25 +169,22 @@ def gmvControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
 
             # ---- Motor Model Output
             elif kk == 1 and A_order == 1:
-                model_output_1[kk] = dot(-A_coeff[1:], model_output_1[kk-1::-1])\
-                                        + dot(B_coeff, manipulated_variable_1[kk-1::-1])
-                # Determine uncertainty
-                output_model_comparation[kk] = process_output[kk] - model_output_1[kk]
-
-                # Determine Error
-                erro1[kk] = reference_input[kk] - output_model_comparation[kk]
-
-                # Control Signal
-                manipulated_variable_1[kk] = dot(-B_delta[1:],manipulated_variable_1[kk-1::-1])+ (1-alpha1)*dot(A_coeff,erro1[kk::-1])
-                manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta[0]
+                
+                # GMV Control Signal
+                delta_control_signal[kk] = np.dot(r_poly_1[1:],delta_control_signal[kk-1::-1]) \
+                                            + t01*reference_input[kk] - np.dot(s_poly_1,process_output[kk::-1])
+                delta_control_signal[kk]/=r_poly_1[0]
+                
+                manipulated_variable_1[kk] = manipulated_variable_1[kk-1] +  delta_control_signal[kk]
+               
                 # Control Signal Saturation
                 manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
             
 
                 # Motor Power String Formatation
-                motors_power_packet = f"{manipulated_variable_1[kk]}\r"
+                serial_data_pack = f"{manipulated_variable_1[kk]}\r"
 
-                sendToArduino(arduinoData, motors_power_packet)
+                sendToArduino(arduinoData, serial_data_pack)
                 
                 # Store the output process values and control signal
                 current_timestamp = datetime.datetime.now()
@@ -145,29 +197,20 @@ def gmvControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
                                         
             elif kk >A_order:
                 
-                # print(f'kk == {kk}')
-                # print(f'model_output_1: {model_output_1[kk-1:kk-A_order-1:-1]}')
-                # print(f'manipulated_variable_1: {manipulated_variable_1[kk-1:kk-B_order-1:-1]}')
-                model_output_1[kk] = dot(-A_coeff[1:], model_output_1[kk-1:kk-A_order-1:-1])\
-                                        + dot(B_coeff, manipulated_variable_1[kk-1:kk-B_order-1:-1])
-                
-
-                # Determine uncertainty
-                output_model_comparation[kk] = process_output[kk] - model_output_1[kk]
-
-                # Determine Error
-                erro1[kk] = reference_input[kk] - output_model_comparation[kk]
+                # GMV Control Signal
+                delta_control_signal[kk] = np.dot(r_poly_1[1:],delta_control_signal[kk-1:kk-nb1-1:-1]) + t01*reference_input[kk] - np.dot(s_poly_1,process_output[kk:kk-ns1-1:-1])
+                delta_control_signal[kk]/=r_poly_1[0]
 
                 # Control Signal
-                manipulated_variable_1[kk] = dot(-B_delta[1:],manipulated_variable_1[kk-1:kk-B_order-1:-1])+ (1-alpha1)*dot(A_coeff,erro1[kk:kk-A_order-1:-1])
-                manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta[0]
+                manipulated_variable_1[kk] = manipulated_variable_1[kk-1] +  delta_control_signal[kk]
+                
                 # Control Signal Saturation
                 manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
             
 
                 # Motor Power String Formatation
-                motors_power_packet = f"{manipulated_variable_1[kk]}\r"
-                sendToArduino(arduinoData, motors_power_packet)
+                serial_data_pack = f"{manipulated_variable_1[kk]}\r"
+                sendToArduino(arduinoData, serial_data_pack)
                 
                 # Store the output process values and control signal
                 current_timestamp = datetime.now()
@@ -183,7 +226,7 @@ def gmvControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
 
 
 def gmvControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1:str, num_coeff_2:str,den_coeff_2:str,
-                          gmv_mr_tau_mf1:float, gmv_mr_tau_mf2:float,
+                          gmv_q01:float,gmv_q02:float,
                           gmv_multiple_reference1:float, gmv_multiple_reference2:float, gmv_multiple_reference3:float,
                           change_ref_instant2 = 1, change_ref_instant3 = 1):
 
@@ -203,22 +246,23 @@ def gmvControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     sampling_time = get_session_variable('sampling_time')
     samples_number = get_session_variable('samples_number')
 
+    if not st.session_state.connected['arduinoData']:
+        return st.toast('Arduino não conectado!')
+    # Receber o objeto arduino da sessão
+    arduinoData = st.session_state.connected['arduinoData']
+    
     # gmv Controller Project
 
     # Initial Conditions
-    process_output = zeros(samples_number)
-    model_output_1 = zeros(samples_number)
-    model_output_2 = zeros(samples_number)
-    erro1 = zeros(samples_number)
-    erro2 = zeros(samples_number)
-    output_model_comparation_1 = zeros(samples_number)
-    output_model_comparation_2 = zeros(samples_number)
+    process_output = np.zeros(samples_number)
+    delta_control_signal_1 = np.zeros(samples_number)
+    delta_control_signal_2 = np.zeros(samples_number)
 
     # Take the index of time to change the referencee
     instant_sample_2 = get_sample_position(sampling_time, samples_number, change_ref_instant2)
     instant_sample_3 = get_sample_position(sampling_time, samples_number, change_ref_instant3)
 
-    reference_input = gmv_multiple_reference1*ones(samples_number)
+    reference_input = gmv_multiple_reference1*np.ones(samples_number)
     reference_input[instant_sample_2:instant_sample_3] = gmv_multiple_reference2
     reference_input[instant_sample_3:] = gmv_multiple_reference3
     st.session_state.controller_parameters['reference_input'] = reference_input.tolist()
@@ -230,8 +274,8 @@ def gmvControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
 
 
     # Manipulated variable
-    manipulated_variable_1 = zeros(samples_number)
-    manipulated_variable_2 = zeros(samples_number)
+    manipulated_variable_1 = np.zeros(samples_number)
+    manipulated_variable_2 = np.zeros(samples_number)
     motors_power_packet = "0,0"
 
     # Model transfer Function 1
@@ -240,32 +284,42 @@ def gmvControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     # print(A_coeff)
     # print(B_coeff)
     A_order = len(A_coeff_1)-1
-    B_order = len(B_coeff_1) # Zero holder aumenta um grau
+    B_order = len(B_coeff_1)-1 # Zero holder aumenta um grau
 
     ## Model transfer Function 2
     A_coeff_2, B_coeff_2 = convert_tf_2_discrete(num_coeff_2,den_coeff_2,transfer_function_type)
+    q01 = gmv_q01
+    q02 = gmv_q02
     
     # print(A_coeff)
     # print(B_coeff)
+    d = 1
+    na1 = A_order
+    nb1 = B_order
+    ns1 = na1
+    ne1 = d-1
     
-    # Close Loop Tau Calculation
-    tau_mf1 = gmv_mr_tau_mf1
-    alpha1 = exp(-sampling_time/tau_mf1)
+    
+    # Definir o polinômio P1(z)
+    P1 = create_P1_poly(ne1,ns1,filter=True)
+    P2 = create_P1_poly(ne1,ns1,filter=True)
+    
+    # Encontrar o polinômio E1(z) e S1(z)
+    e_poly_1,s_poly_1 = E_S_poly_calculation(ne1,ns1,A_coeff_1,P1)
+    e_poly_2,s_poly_2 = E_S_poly_calculation(ne1,ns1,A_coeff_2,P2)
+    
+        
+    # Encontrar o polinômio R por meio do Q1(z^-1) e B1(z^-1)
+    r_poly_1 = r_poly_calculation(B_coeff_1,e_poly_1,q01)
+    r_poly_2 = r_poly_calculation(B_coeff_2,e_poly_2,q02)
+    nr1 = len(r_poly_1)-1
+    nr2 = len(r_poly_1)-1
 
-    tau_mf2 = gmv_mr_tau_mf2
-    alpha2 = exp(-sampling_time/tau_mf2)
     
-    # Perform polynomial multiplication using np.convolve
-    alpha_delta_1 = [1,-alpha1]
-    B_delta_1 = convolve(B_coeff_1,alpha_delta_1)
+    # Calculo do polinômio T1(z)
+    t01 = sum(P1)[0]
+    t02 = sum(P2)[0]
     
-    # Perform polynomial multiplication using np.convolve
-    alpha_delta_2 = [1,-alpha2]
-    B_delta_2 = convolve(B_coeff_2,alpha_delta_2)
-    
-
-    # Receber o objeto arduino da sessão
-    arduinoData = st.session_state.connected['arduinoData']
 
     # limpar os valores anteriores do sensor
     st.session_state.sensor = dict()
@@ -320,24 +374,17 @@ def gmvControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
                 
             # ---- Motor Model Output
             elif kk == 1 and A_order == 1:
-                model_output_1[kk] = dot(-A_coeff_1[1:], model_output_1[kk-1::-1]) + dot(B_coeff_1, manipulated_variable_1[kk-1::-1])
-                model_output_2[kk] = dot(-A_coeff_2[1:], model_output_2[kk-1::-1]) - dot(B_coeff_2, manipulated_variable_2[kk-1::-1])
+                # ---- GMV Control Signal
+                delta_control_signal_1[kk] = np.dot(r_poly_1[1:],delta_control_signal_1[kk-1::-1])\
+                                            + t01*reference_input[kk] - np.dot(s_poly_1,process_output[kk::-1])
+                delta_control_signal_1[kk]/=r_poly_1[0]
+                manipulated_variable_1[kk] = manipulated_variable_1[kk-1] +  delta_control_signal_1[kk]
                 
-                # Determine uncertainty
-                output_model_comparation_1[kk] = process_output[kk] - model_output_1[kk]
-                output_model_comparation_2[kk] = -(process_output[kk] - model_output_2[kk])
-
-                # Determine Error
-                erro1[kk] = reference_input[kk] - output_model_comparation_1[kk]
-                erro2[kk] = -(reference_input[kk] + output_model_comparation_2[kk])
-
-                # Control Signal
-                manipulated_variable_1[kk] = dot(-B_delta_1[1:],manipulated_variable_1[kk-1::-1]) + (1-alpha1)*dot(A_coeff_1,erro1[kk::-1])
-                manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta_1[0]
-                
-                manipulated_variable_2[kk] = dot(-B_delta_2[1:],manipulated_variable_2[kk-1::-1]) + (1-alpha2)*dot(A_coeff_2,erro2[kk::-1])
-                manipulated_variable_2[kk] = manipulated_variable_2[kk]/B_delta_2[0]
-                
+                delta_control_signal_2[kk] = np.dot(r_poly_2[1:],delta_control_signal_2[kk-1::-1])\
+                                            + t02*reference_input[kk] - np.dot(s_poly_2,process_output[kk::-1])
+                delta_control_signal_2[kk]/=r_poly_2[0]
+                manipulated_variable_2[kk] = manipulated_variable_2[kk-1] -  delta_control_signal_2[kk]
+               
                 # Control Signal Saturation
                 manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
                 manipulated_variable_2[kk] = max(min_pot, min(manipulated_variable_2[kk], max_pot))
@@ -359,24 +406,20 @@ def gmvControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
                 my_bar.progress(percent_complete, text=progress_text)
                 
             elif kk > A_order:
-                model_output_1[kk] = dot(-A_coeff_1[1:], model_output_1[kk-1:kk-A_order-1:-1]) + dot(B_coeff_1, manipulated_variable_1[kk-1:kk-B_order-1:-1])
-                model_output_2[kk] = dot(-A_coeff_2[1:], model_output_2[kk-1:kk-A_order-1:-1]) - dot(B_coeff_2, manipulated_variable_2[kk-1:kk-B_order-1:-1])
                 
-                # Determine uncertainty
-                output_model_comparation_1[kk] = process_output[kk] - model_output_1[kk]
-                output_model_comparation_2[kk] = -(process_output[kk] - model_output_2[kk])
-
-                # Determine Error
-                erro1[kk] = reference_input[kk] - output_model_comparation_1[kk]
-                erro2[kk] = -(reference_input[kk] + output_model_comparation_2[kk])
+                # GMV Control Signal
+                delta_control_signal_1[kk] = np.dot(r_poly_1[1:],delta_control_signal_1[kk-1:kk-nb1-1:-1])\
+                                            + t01*reference_input[kk] - np.dot(s_poly_1,process_output[kk:kk-ns1-1:-1])
+                delta_control_signal_1[kk]/=r_poly_1[0]
+                delta_control_signal_2[kk] = np.dot(r_poly_2[1:],delta_control_signal_2[kk-1:kk-nb1-1:-1])\
+                                            + t02*reference_input[kk] - np.dot(s_poly_2,process_output[kk:kk-ns1-1:-1])
+                delta_control_signal_2[kk]/=r_poly_2[0]
 
                 # Control Signal
-                manipulated_variable_1[kk] = dot(-B_delta_1[1:],manipulated_variable_1[kk-1:kk-B_order-1:-1]) + (1-alpha1)*dot(A_coeff_1,erro1[kk:kk-A_order-1:-1])
-                manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta_1[0]
+                manipulated_variable_1[kk] = manipulated_variable_1[kk-1] +  delta_control_signal_1[kk]
+                manipulated_variable_2[kk] = manipulated_variable_2[kk-1] -  delta_control_signal_2[kk]
                 
-                manipulated_variable_2[kk] = dot(-B_delta_2[1:],manipulated_variable_2[kk-1:kk-B_order-1:-1])+ (1-alpha2)*dot(A_coeff_2,erro2[kk:kk-A_order-1:-1])
-                manipulated_variable_2[kk] = manipulated_variable_2[kk]/B_delta_2[0]
-                
+               
                 # Control Signal Saturation
                 manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
                 manipulated_variable_2[kk] = max(min_pot, min(manipulated_variable_2[kk], max_pot))

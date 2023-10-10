@@ -104,19 +104,32 @@ def gmv_siso_tab_form():
             siso_change_ref_instant2 = st.number_input(
                 'Instante da referência 2 (s):', value=calculate_time_limit()/2,step=1.0, min_value=0.0, max_value=siso_change_ref_instant3, key='siso_change_ref_instant2')
         
-    gmv_sr_tau_mf1 = st.number_input(
-                'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, key='gmv_sr_tau_mf1')
+    gmv_siso_q0 = st.number_input(
+                'Magnitude do Sinal de Controle $Q(z^{-1})$', value=1.0, step=0.1, min_value=0.0, key='gmv_q0')
     
-    if st.button('Iniciar', type='primary', key='gmv_siso_button'):
+    start_col,cancel_col = st.columns([0.2,0.8])
+    with cancel_col:
         
+        cancel_button = st.button('Cancelar', key='gmv_cancel_siso_button')
+        if cancel_button:
+            st.stop()
+            if 'arduinoData' in st.session_state.connected:
+                arduinoData = st.session_state.connected['arduinoData']
+                sendToArduino(arduinoData, '0')
+            
+    with start_col:        
+        start_button = st.button('Iniciar', type='primary', key='gmv_siso_button')
+    
+    if start_button:       
         if reference_number == 'Única':
             
-            gmvControlProcessSISO(transfer_function_type,num_coeff,den_coeff,gmv_sr_tau_mf1, gmv_single_reference, gmv_single_reference, gmv_single_reference)
+            gmvControlProcessSISO(transfer_function_type,num_coeff,den_coeff,gmv_siso_q0, gmv_single_reference, gmv_single_reference, gmv_single_reference)
             
         elif reference_number == 'Múltiplas':
-            gmvControlProcessSISO(transfer_function_type,num_coeff,den_coeff,gmv_sr_tau_mf1, gmv_siso_multiple_reference1, gmv_siso_multiple_reference2, gmv_siso_multiple_reference3, siso_change_ref_instant2,siso_change_ref_instant3)
-
-
+            gmvControlProcessSISO(transfer_function_type,num_coeff,den_coeff,gmv_siso_q0, gmv_siso_multiple_reference1, gmv_siso_multiple_reference2, gmv_siso_multiple_reference3, siso_change_ref_instant2,siso_change_ref_instant3)
+        
+        if cancel_button:
+            st.rerun()
 
 
 
@@ -200,14 +213,14 @@ def gmv_mimo_tab_form():
             change_ref_instant2 = st.number_input(
                 'Instante da referência 2 (s):', value=calculate_time_limit()/2, step=1.0, min_value=0.0, max_value=change_ref_instant3, key='gmv_mimo_change_ref_instant2')
     
-    st.write('Constante de Tempo de Malha Fechada ($\\tau$)')
+    st.write('Magnitude do Sinal de Controle $Q(z^{-1})$')
     tau_mf_col1, tau_mf_col2 = st.columns(2)
     with tau_mf_col1:
-        gmv_mimo_tau_mf1 = st.number_input(
-            '$\\tau_1$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='gmv_mr_tau_mf1')
+        gmv_mimo_q01 = st.number_input(
+            '$Q_1(z^{-1})$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='gmv_mr_tau_mf1')
     with tau_mf_col2:
-        gmv_mimo_tau_mf2 = st.number_input(
-            '$\\tau_2$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='gmv_mr_tau_mf2')
+        gmv_mimo_q02 = st.number_input(
+            '$Q_2(z^{-1})$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='gmv_mr_tau_mf2')
 
     if st.button('Receber Dados', type='primary', key='gmv_mimo_setpoint_button'):
             
@@ -215,11 +228,11 @@ def gmv_mimo_tab_form():
         if reference_number == 'Única':
             
             gmvControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
-                                  gmv_mimo_tau_mf1,gmv_mimo_tau_mf2, 
+                                  gmv_mimo_q01,gmv_mimo_q02, 
                                   gmv_single_reference, gmv_single_reference, gmv_single_reference)
             
         elif reference_number == 'Múltiplas':
             gmvControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
-                                  gmv_mimo_tau_mf1,gmv_mimo_tau_mf2, 
+                                  gmv_mimo_q01,gmv_mimo_q02, 
                                   gmv_mimo_reference1, gmv_mimo_reference2,gmv_mimo_reference3,
                                   change_ref_instant2,change_ref_instant3)
