@@ -46,9 +46,10 @@ def dictionary_to_pandasDataframe(variable:dict,variable_name_column:str)->pd.Da
     return variable_dataframe
 
 def insertReferenceInDataframe(variable_dataframe:pd.DataFrame,reference_col:list)->pd.DataFrame:
-
+    # Get the length of the DataFrame
+    df_length = len(variable_dataframe)
     # Convert the inner dictionary to a list of dictionaries
-    variable_dataframe['Reference'] = reference_col
+    variable_dataframe['Reference'] = reference_col[:df_length]
 
     return variable_dataframe
 
