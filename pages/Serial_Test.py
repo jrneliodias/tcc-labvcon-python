@@ -37,8 +37,8 @@ plot_chart_validation(ol_output_dataframe, x = 'Time (s)', y = 'Open Loop',heigh
 col1, col2 = st.columns(2)
 
 with col1:
-
-    datetimeList = list(st.session_state.sensor.keys())
+    
+    datetimeList = list(get_session_variable('process_output_sensor').keys())
 
     # Define the format of your date string
     date_format = "%Y-%m-%d %H:%M:%S.%f"
