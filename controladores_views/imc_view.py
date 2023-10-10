@@ -61,7 +61,7 @@ def imc_siso_tab_form():
     
     coefficients_validations(num_coeff)
         
-    den_coeff = st.text_input('Coeficientes do **Denominador** :',key='siso_imc_den_coeff',help=help_text,placeholder='1.334 , 1')
+    den_coeff = st.text_input('Coeficientes do **Denominador** :',key='siso_imc_den_coeff',help=help_text,placeholder='1.827 , 1')
     coefficients_validations(den_coeff)
     
     delay_checkbox_col, delay_input_col = st.columns(2)
