@@ -5,10 +5,12 @@ import numpy as np
 from connections import *
 import matplotlib.pyplot as plt
 
-
 # Receber o objeto arduino da sessão
-arduinoData = st.session_state.connected['arduinoData']
-
+if 'arduinoData' in st.session_state.connected:
+    arduinoData = st.session_state.connected['arduinoData']
+else:
+    st.warning('Arduino não conectado')
+    
 
 sampling_time = 0.01
 samples_number = 5000
