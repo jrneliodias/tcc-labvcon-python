@@ -44,8 +44,8 @@ tausmith1 = 1.827 #0.6
 
 
 # Motor 1 Model Transfer Function
-# Gm1 = tf(Kpsmith1, [tausmith1, 1])
-Gm1 = tf(0.8, [1, 2*0.3, 1]) # Second Order Transfer Function
+Gm1 = tf(Kpsmith1, [tausmith1, 1])
+# Gm1 = tf(0.8, [1, 2*0.3, 1]) # Second Order Transfer Function
 Gmz1 = c2d(Gm1, sampling_time)
 num1, den1 = tfdata(Gmz1)
 Bm1 = num1[0][0]
