@@ -113,7 +113,7 @@ def gpc_siso_tab_form():
     with lambda_col:   
         gpc_siso_lambda = st.number_input('$\lambda$', value=1.0, step=0.1, min_value=0.0, key='gpc_lambda')
     
-    future_inputs_checkbox=st.checkbox('Entradas Futuras?')
+    future_inputs_checkbox=st.checkbox('Entradas Futuras?',key= 'gpc_siso_future_inputs_checkbox')
     
     start_col,cancel_col = st.columns([0.2,0.8])
     with cancel_col:
