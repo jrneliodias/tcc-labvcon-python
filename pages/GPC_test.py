@@ -15,9 +15,9 @@ else:
      
 Ny = 3
 Nu = 1
-lambda_ = 2
-sampling_time = 0.1
-samples_number = 500
+lambda_ = 1
+sampling_time = 0.01
+samples_number = 5000
 
 # Initial Conditions
 output_sensor = np.zeros(samples_number)
@@ -27,7 +27,7 @@ model_output_1 = np.zeros(samples_number)
 
 # Setpoint
 reference = 50*np.ones(samples_number+Ny)
-# reference[1000:] = 70
+reference[3000:] = 140
 
 # Power Saturation
 max_pot = 2000
@@ -69,7 +69,7 @@ B_order = len(Bm1)
 # GPC CONTROLLER
 gpc_m1 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny,Nu=Nu,lambda_=lambda_,ts=sampling_time,Am=Am1, Bm=Bm1)
 gpc_m1.calculateController()
-#st.write(vars(gpc_m1))
+st.write(vars(gpc_m1))
 
 
 
