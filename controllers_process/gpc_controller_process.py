@@ -236,84 +236,49 @@ def gpcControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
 
             
             if kk <= A_order:
-                # Store the output process values and control signal
-                current_timestamp = str(datetime.now())
-                process_output_sensor[current_timestamp] = float(process_output[kk])
-                control_signal_1[current_timestamp] = float(manipulated_variable_1[kk])
-                kk += 1
-
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
-                
+                F_yf = np.dot(gpc_m1.F, np.zeros(A_order+1))
                 sendToArduino(arduinoData, '0')
                 
 
             # ---- Motor Model Output
             elif kk == 1 and A_order == 1:
               
-                aux_ref = future_inputs_selection(future_inputs_checkbox,kk,Ny,reference_input)
-                
                 F_yf = np.dot(gpc_m1.F,process_output[kk::-1])
-                    # st.write('F*yf',F_yf)
-                    
-                H_du = np.dot(gpc_m1.H,delta_control_signal[kk-1])
-                    # st.write('H*du',H_du)
-                    
-                fi = np.squeeze(H_du) + F_yf
                 
-                delta_control_signal[kk] = np.dot(gpc_m1.Kgpc,(aux_ref-fi))
-                manipulated_variable_1[kk] = manipulated_variable_1[kk-1] + delta_control_signal[kk]
-                
-                
-                # Control Signal Saturation
-                manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
-        
-                # Motor Power String Formatation
-                serial_data_pack = f"{manipulated_variable_1[kk]}\r"
-
-                sendToArduino(arduinoData, serial_data_pack)
-                
-                # Store the output process values and control signal
-                current_timestamp = str(datetime.now())
-                process_output_sensor[current_timestamp] = float(process_output[kk])
-                control_signal_1[current_timestamp] = float(manipulated_variable_1[kk])
-                kk += 1
-
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
-                                        
             elif kk > A_order:
-                
-                
-                aux_ref = future_inputs_selection(future_inputs_checkbox,kk,Ny,reference_input)
-                
                 F_yf = np.dot(gpc_m1.F,process_output[kk:kk-A_order-1:-1])
-                    # st.write('F*yf',F_yf)
-                    
-                H_du = np.dot(gpc_m1.H,delta_control_signal[kk-1])
-                    # st.write('H*du',H_du)
-                    
-                fi = np.squeeze(H_du) + F_yf
+                    # st.write('F*yf',F_yf)           
+                                        
                 
-                delta_control_signal[kk] = np.dot(gpc_m1.Kgpc,(aux_ref-fi))
-                manipulated_variable_1[kk] = manipulated_variable_1[kk-1] + delta_control_signal[kk]
-                
-                # Control Signal Saturation
-                manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
+            aux_ref = future_inputs_selection(future_inputs_checkbox,kk,Ny,reference_input)
             
-
-                # Motor Power String Formatation
-                serial_data_pack = f"{manipulated_variable_1[kk]}\r"
-                sendToArduino(arduinoData, serial_data_pack)
+                # st.write('F*yf',F_yf)
                 
-                # Store the output process values and control signal
-                current_timestamp = str(datetime.now())
-                process_output_sensor[current_timestamp] = float(process_output[kk])
-                control_signal_1[current_timestamp] = float(manipulated_variable_1[kk])
-                kk += 1
+            H_du = np.dot(gpc_m1.H,delta_control_signal[kk-1])
+                # st.write('H*du',H_du)
+                
+            fi = np.squeeze(H_du) + F_yf
+            
+            delta_control_signal[kk] = np.dot(gpc_m1.Kgpc,(aux_ref-fi))
+            manipulated_variable_1[kk] = manipulated_variable_1[kk-1] + delta_control_signal[kk]
+            
+            # Control Signal Saturation
+            manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
+        
 
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
+            # Motor Power String Formatation
+            serial_data_pack = f"{manipulated_variable_1[kk]}\r"
+            sendToArduino(arduinoData, serial_data_pack)
+                
+            
+            # Store the output process values and control signal
+            current_timestamp = str(datetime.now())
+            process_output_sensor[current_timestamp] = float(process_output[kk])
+            control_signal_1[current_timestamp] = float(manipulated_variable_1[kk])
+            kk += 1
+
+            percent_complete = kk / (samples_number)
+            my_bar.progress(percent_complete, text=progress_text)
 
     # Turn off the motor
     sendToArduino(arduinoData, '0')
@@ -333,7 +298,7 @@ def future_inputs_selection(future_inputs_checkbox,kk,Ny,reference_input):
 
 def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1:str, num_coeff_2:str,den_coeff_2:str,
                           gpc_mimo_ny_1:int,gpc_mimo_nu_1:int,gpc_mimo_lambda_1:float,
-                          gpc_mimo_ny_2:int,gpc_mimo_nu_2:int,gpc_mimo_lambda_2:float,
+                          gpc_mimo_ny_2:int,gpc_mimo_nu_2:int,gpc_mimo_lambda_2:float,future_inputs_checkbox:bool,
                           gpc_multiple_reference1:float, gpc_multiple_reference2:float, gpc_multiple_reference3:float,
                           change_ref_instant2 = 1, change_ref_instant3 = 1):
 
@@ -359,6 +324,12 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     arduinoData = st.session_state.connected['arduinoData']
     
     # gpc Controller Project
+    Ny_1 = gpc_mimo_ny_1
+    Nu_1 = gpc_mimo_nu_1
+    lambda_1 = gpc_mimo_lambda_1
+    Ny_2 = gpc_mimo_ny_2
+    Nu_2 = gpc_mimo_nu_2
+    lambda_2 = gpc_mimo_lambda_2
 
     # Initial Conditions
     process_output = np.zeros(samples_number)
@@ -368,11 +339,12 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     # Take the index of time to change the referencee
     instant_sample_2 = get_sample_position(sampling_time, samples_number, change_ref_instant2)
     instant_sample_3 = get_sample_position(sampling_time, samples_number, change_ref_instant3)
-
-    reference_input = gpc_multiple_reference1*np.ones(samples_number)
+    
+    ny_max = max(Ny_1,Ny_2)
+    reference_input = gpc_multiple_reference1*np.ones(samples_number+ny_max)
     reference_input[instant_sample_2:instant_sample_3] = gpc_multiple_reference2
     reference_input[instant_sample_3:] = gpc_multiple_reference3
-    st.session_state.controller_parameters['reference_input'] = reference_input.tolist()
+    set_session_controller_parameter('reference_input',reference_input[:samples_number].tolist())
 
 
     # Power Saturation
@@ -395,33 +367,28 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
 
     ## Model transfer Function 2
     A_coeff_2, B_coeff_2 = convert_tf_2_discrete(num_coeff_2,den_coeff_2,transfer_function_type)
-    q01 = gpc_q01
-    q02 = gpc_q02
     
-    # print(A_coeff)
-    # print(B_coeff)
-    d = 1
-    na1 = A_order
-    nb1 = B_order
-    ns1 = na1
-    ne1 = d-1
+    # GPC CONTROLLER
+    gpc_m1 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny_1,Nu=Nu_1,lambda_=lambda_1,
+                                             ts=sampling_time,Am=A_coeff_1, Bm=B_coeff_1)
+    gpc_m1.calculateController()
     
-
+    gpc_m2 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny_2,Nu=Nu_2,lambda_=lambda_2,
+                                             ts=sampling_time,Am=A_coeff_2, Bm=B_coeff_2)
+    gpc_m2.calculateController()
     
-    # clear previous control signal values
-    st.session_state.controller_parameters['control_signal_1']= dict()
-    control_signal_1 = st.session_state.controller_parameters['control_signal_1']
+   # clear previous control signal values
+    set_session_controller_parameter('control_signal_1',dict())
+    control_signal_1 = get_session_variable('control_signal_1')
     
-    
-    # clear previous control signal values
-    st.session_state.controller_parameters['control_signal_2']= dict()
-    control_signal_2 = st.session_state.controller_parameters['control_signal_2']
+    set_session_controller_parameter('control_signal_2',dict())
+    control_signal_2 = get_session_variable('control_signal_2')
     
     # clear previous control signal values
-    st.session_state.controller_parameters['process_output_sensor'] = dict()
-    process_output_sensor = st.session_state.controller_parameters['process_output_sensor']
+    set_session_controller_parameter('process_output_sensor',dict())
+    process_output_sensor = get_session_variable('process_output_sensor')
     
-    
+        
     # inicializar  o timer
     start_time = time.time()
     kk = 0
@@ -441,74 +408,64 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
             # -----  Angle Sensor Output
             process_output[kk] = readFromArduino(arduinoData)
             
+            
             if kk <= A_order:
-                # Store the output process values and control signal
-                current_timestamp = datetime.now()
-                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
-                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
-                control_signal_2[str(current_timestamp)] = float(manipulated_variable_2[kk])
-                kk += 1
-
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
-                
+                F_yf_1 = np.dot(gpc_m1.F, np.zeros(A_order+1))
+                F_yf_2 = np.dot(gpc_m2.F, np.zeros(A_order+1))
                 sendToArduino(arduinoData, '0,0')
                 
+
             # ---- Motor Model Output
             elif kk == 1 and A_order == 1:
               
-                manipulated_variable_2[kk] = manipulated_variable_2[kk-1] -  delta_control_signal_2[kk]
-               
-                # Control Signal Saturation
-                manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
-                manipulated_variable_2[kk] = max(min_pot, min(manipulated_variable_2[kk], max_pot))
-            
-
-                # Motor Power String Formatation
-                motors_power_packet = f"{manipulated_variable_1[kk]},{manipulated_variable_2[kk]}\r"
-
-                sendToArduino(arduinoData, motors_power_packet)
-                
-                # Store the output process values and control signal
-                current_timestamp = datetime.now()
-                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
-                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
-                control_signal_2[str(current_timestamp)] = float(manipulated_variable_2[kk])
-                kk += 1
-
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
+                F_yf_1 = np.dot(gpc_m1.F,process_output[kk::-1])
+                F_yf_2 = np.dot(gpc_m2.F,process_output[kk::-1])
                 
             elif kk > A_order:
+                F_yf_1 = np.dot(gpc_m1.F,process_output[kk:kk-A_order-1:-1])
+                F_yf_2 = np.dot(gpc_m2.F,process_output[kk:kk-A_order-1:-1])
+                    # st.write('F*yf',F_yf)           
+                                        
                 
-                # gpc Control Signal
-              
-                # Control Signal
-                manipulated_variable_1[kk] = manipulated_variable_1[kk-1] +  delta_control_signal_1[kk]
-                manipulated_variable_2[kk] = manipulated_variable_2[kk-1] -  delta_control_signal_2[kk]
-                
-               
-                # Control Signal Saturation
-                manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
-                manipulated_variable_2[kk] = max(min_pot, min(manipulated_variable_2[kk], max_pot))
+            aux_ref_1 = future_inputs_selection(future_inputs_checkbox,kk,Ny_1,reference_input)
+            aux_ref_2 = future_inputs_selection(future_inputs_checkbox,kk,Ny_2,reference_input)
             
-
-                # Motor Power String Formatation
-                motors_power_packet = f"{manipulated_variable_1[kk]},{manipulated_variable_2[kk]}\r"
-
-                sendToArduino(arduinoData, motors_power_packet)
+                # st.write('F*yf',F_yf)
                 
-                # Store the output process values and control signal
-                current_timestamp = datetime.now()
-                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
-                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
-                control_signal_2[str(current_timestamp)] = float(manipulated_variable_2[kk])
-                kk += 1
+            H_du_1 = np.dot(gpc_m1.H,delta_control_signal_1[kk-1])
+            H_du_2 = np.dot(gpc_m2.H,delta_control_signal_2[kk-1])
+                # st.write('H*du',H_du)
+                
+            fi_1 = np.squeeze(H_du_1) + F_yf_1
+            fi_2 = np.squeeze(H_du_2) + F_yf_2
+            
+            delta_control_signal_1[kk] = np.dot(gpc_m1.Kgpc,(aux_ref_1-fi_1))
+            manipulated_variable_1[kk] = manipulated_variable_1[kk-1] + delta_control_signal_1[kk]
+            
+            delta_control_signal_2[kk] = np.dot(gpc_m1.Kgpc,(aux_ref_2-fi_2))
+            manipulated_variable_2[kk] = manipulated_variable_2[kk-1] + delta_control_signal_2[kk]
+            
+            # Control Signal Saturation
+            manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
+        
+            manipulated_variable_2[kk] = max(min_pot, min(manipulated_variable_2[kk], max_pot))
+        
 
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
+            # Motor Power String Formatation
+            serial_data_pack = f"{manipulated_variable_1[kk]},{manipulated_variable_2[kk]}\r"
+            sendToArduino(arduinoData, serial_data_pack)
                 
-                
+            
+            # Store the output process values and control signal
+            current_timestamp = str(datetime.now())
+            process_output_sensor[current_timestamp] = process_output[kk]
+            control_signal_1[current_timestamp] = manipulated_variable_1[kk]
+            control_signal_2[current_timestamp] = manipulated_variable_2[kk]
+            kk += 1
+
+            percent_complete = kk / (samples_number)
+            my_bar.progress(percent_complete, text=progress_text)
+            
 
 
     # Turn off the motor

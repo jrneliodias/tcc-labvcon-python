@@ -26,8 +26,9 @@ delta_control_signal = np.zeros(samples_number)
 model_output_1 = np.zeros(samples_number)
 
 # Setpoint
-reference = 50*np.ones(samples_number+Ny)
-reference[3000:] = 140
+reference = 0*np.ones(samples_number+Ny)
+reference[3000:] = 50
+reference[4000:] = 70
 
 # Power Saturation
 max_pot = 2000
