@@ -226,27 +226,48 @@ def gpc_mimo_tab_form():
             change_ref_instant2 = st.number_input(
                 'Instante da referência 2 (s):', value=calculate_time_limit()/2, step=1.0, min_value=0.0, max_value=change_ref_instant3, key='gpc_mimo_change_ref_instant2')
     
-    st.write('Magnitude do Sinal de Controle $Q(z^{-1})$')
-    tau_mf_col1, tau_mf_col2 = st.columns(2)
-    with tau_mf_col1:
-        gpc_mimo_q01 = st.number_input(
-            '$Q_1(z^{-1})$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='gpc_mr_tau_mf1')
-    with tau_mf_col2:
-        gpc_mimo_q02 = st.number_input(
-            '$Q_2(z^{-1})$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='gpc_mr_tau_mf2')
+    ny_col,nu_col,lambda_col = st.columns(3)
+    
+    with ny_col:   
+        gpc_mimo_ny_1 = st.number_input('$N_{y1}$', value=1, step=1, min_value=0, key='gpc_mimo_ny_1')
+        gpc_mimo_ny_2 = st.number_input('$N_{y2}$', value=1, step=1, min_value=0, key='gpc_mimo_ny_2')
+    with nu_col:   
+        gpc_mimo_nu_1 = st.number_input('$N_{u1}$', value=1, step=1, min_value=0, key='gpc_mimo_nu_1')
+        gpc_mimo_nu_2 = st.number_input('$N_{u2}$', value=1, step=1, min_value=0, key='gpc_mimo_nu_2')
+    with lambda_col:   
+        gpc_mimo_lambda_1 = st.number_input('$\lambda_{1}$', value=1.0, step=0.1, min_value=0.0, key='gpc_mimo_lambda_1')
+        gpc_mimo_lambda_2 = st.number_input('$\lambda_{2}$', value=1.0, step=0.1, min_value=0.0, key='gpc_mimo_lambda_2')
+    
+    future_inputs_checkbox=st.checkbox('Entradas Futuras?',key= 'gpc_mimo_future_inputs_checkbox')
 
-    if st.button('Receber Dados', type='primary', key='gpc_mimo_setpoint_button'):
+    start_col,cancel_col = st.columns([0.2,0.8])
+    with cancel_col:
+        
+        cancel_button = st.button('Cancelar', key='gpc_cancel_mimo_button')
+        if cancel_button:
+            st.stop()
+            if 'arduinoData' in st.session_state.connected:
+                arduinoData = st.session_state.connected['arduinoData']
+                sendToArduino(arduinoData, '0')
             
-            
+    with start_col:        
+        start_button = st.button('Iniciar', type='primary', key='gpc_mimo_button')
+    
+    if start_button:
         if reference_number == 'Única':
             
             gpcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
-                                  gpc_mimo_q01,gpc_mimo_q02, 
+                                  gpc_mimo_ny_1,gpc_mimo_nu_1,gpc_mimo_lambda_1,
+                                  gpc_mimo_ny_2,gpc_mimo_nu_2,gpc_mimo_lambda_2,future_inputs_checkbox,
                                   gpc_single_reference, gpc_single_reference, gpc_single_reference)
-            
+     
         elif reference_number == 'Múltiplas':
             gpcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
-                                  gpc_mimo_q01,gpc_mimo_q02, 
+                                  gpc_mimo_ny_1,gpc_mimo_nu_1,gpc_mimo_lambda_1,
+                                  gpc_mimo_ny_2,gpc_mimo_nu_2,gpc_mimo_lambda_2,future_inputs_checkbox, 
                                   gpc_mimo_reference1, gpc_mimo_reference2,gpc_mimo_reference3,
                                   change_ref_instant2,change_ref_instant3)
+        if cancel_button:
+            st.rerun()
+
 
