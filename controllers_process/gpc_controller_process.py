@@ -443,7 +443,7 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
             manipulated_variable_1[kk] = manipulated_variable_1[kk-1] + delta_control_signal_1[kk]
             
             delta_control_signal_2[kk] = np.dot(gpc_m1.Kgpc,(aux_ref_2-fi_2))
-            manipulated_variable_2[kk] = manipulated_variable_2[kk-1] + delta_control_signal_2[kk]
+            manipulated_variable_2[kk] = manipulated_variable_2[kk-1] - delta_control_signal_2[kk]
             
             # Control Signal Saturation
             manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
