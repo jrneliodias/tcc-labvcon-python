@@ -20,6 +20,10 @@ def keys2DatetimeObj(datetime_dict):
 def datetime_obj_to_elapsed_time(variable:str)->dict:
 
     sensor_data_dict = get_session_variable(variable)
+  
+    if not sensor_data_dict:
+        return None
+    
     date_object = keys2DatetimeObj(sensor_data_dict)
 
     time_interval = [0] + [(date_object[i] - date_object[0]).total_seconds()
@@ -48,16 +52,19 @@ def dictionary_to_pandasDataframe(variable:dict,variable_name_column:str)->pd.Da
 def insertReferenceInDataframe(variable_dataframe:pd.DataFrame,reference_col:list)->pd.DataFrame:
     # Get the length of the DataFrame
     df_length = len(variable_dataframe)
+    if not reference_col:
+        reference_col = [0]*df_length
+        
     # Convert the inner dictionary to a list of dictionaries
     variable_dataframe['Reference'] = reference_col[:df_length]
 
     return variable_dataframe
 
 def dataframeToPlot(variable_dict:str,variable_name_to_plot:str, second_variable:str) -> pd.DataFrame:
-    if not datetime_obj_to_elapsed_time(variable_dict):
-        return
-    
     variable_with_time = datetime_obj_to_elapsed_time(variable_dict)
+    if not datetime_obj_to_elapsed_time(variable_dict):
+        return None
+    
     process_dictionary = dictionary_to_pandasDataframe(variable_with_time,variable_name_to_plot)
     return insertReferenceInDataframe(process_dictionary,get_session_variable(second_variable))
 
