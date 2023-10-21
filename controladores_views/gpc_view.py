@@ -24,20 +24,25 @@ def gpc_Controller():
            
     with graphics_col:
 
-        process_output_dataframe = dataframeToPlot('process_output_sensor','Process Output','reference_input')
-        st.subheader('Resposta do Sistema')
-        plot_chart_validation(process_output_dataframe, x = 'Time (s)', y = ['Reference','Process Output'],height=500)
+        if get_session_variable('process_output_sensor'):
+            process_output_dataframe = dataframeToPlot('process_output_sensor','Process Output','reference_input')
+            st.subheader('Resposta do Sistema')
+            plot_chart_validation(process_output_dataframe, x = 'Time (s)', y = ['Reference','Process Output'],height=500)
                 
         st.subheader('Sinal de Controle')
-        control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
-        control_signal_1_dataframe = dictionary_to_pandasDataframe(control_signal_with_elapsed_time,'Control Signal 1')
+        if get_session_variable('control_signal_1'):
+            control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
+            control_signal_1_dataframe = dictionary_to_pandasDataframe(control_signal_with_elapsed_time,'Control Signal 1')
+            
+            plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
         
-        plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
         
-        control_signal_2_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_2')
-        control_signal_2_dataframe = dictionary_to_pandasDataframe(control_signal_2_with_elapsed_time,'Control Signal 2')
-        
-        plot_chart_validation(control_signal_2_dataframe, x = 'Time (s)', y = 'Control Signal 2',height=200)
+        if get_session_variable('control_signal_2'):
+            control_signal_2_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_2')
+            control_signal_2_dataframe = dictionary_to_pandasDataframe(control_signal_2_with_elapsed_time,'Control Signal 2')
+            
+            plot_chart_validation(control_signal_2_dataframe, x = 'Time (s)', y = 'Control Signal 2',height=200)
+            
         
         
         

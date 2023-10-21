@@ -13,11 +13,11 @@ if 'arduinoData' in st.session_state.connected:
 else:
     st.warning('Arduino não conectado')
      
-Ny = 3
+Ny = 4
 Nu = 1
-lambda_ = 1
+lambda_ = 0.5
 sampling_time = 0.01
-samples_number = 5000
+samples_number = 2000
 
 # Initial Conditions
 output_sensor = np.zeros(samples_number)
@@ -26,9 +26,9 @@ delta_control_signal = np.zeros(samples_number)
 model_output_1 = np.zeros(samples_number)
 
 # Setpoint
-reference = 0*np.ones(samples_number+Ny)
-reference[3000:] = 50
-reference[4000:] = 70
+reference = 50*np.ones(samples_number+Ny)
+# reference[3000:] = 50
+# reference[4000:] = 70
 
 # Power Saturation
 max_pot = 2000
@@ -45,8 +45,8 @@ tausmith1 = 1.827 #0.6
 
 
 # Motor 1 Model Transfer Function
-Gm1 = tf(Kpsmith1, [tausmith1, 1])
-# Gm1 = tf(0.8, [1, 2*0.3, 1]) # Second Order Transfer Function
+# Gm1 = tf(Kpsmith1, [tausmith1, 1])
+Gm1 = tf(0.8, [1, 2*0.3, 1]) # Second Order Transfer Function
 Gmz1 = c2d(Gm1, sampling_time)
 num1, den1 = tfdata(Gmz1)
 Bm1 = num1[0][0]
