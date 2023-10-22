@@ -26,11 +26,11 @@ with st.sidebar:
     sidebarMenu()
     st.session_state
 
-open_loop_process_output = datetime_obj_to_elapsed_time('process_output_sensor')
-ol_output_dataframe = dictionary_to_pandasDataframe(open_loop_process_output,'Open Loop')
+if get_session_variable('process_output_sensor'):       
+    open_loop_process_output = datetime_obj_to_elapsed_time('process_output_sensor')
+    ol_output_dataframe = dictionary_to_pandasDataframe(open_loop_process_output,'Open Loop')
         
-        
-plot_chart_validation(ol_output_dataframe, x = 'Time (s)', y = 'Open Loop',height=500)
+    plot_chart_validation(ol_output_dataframe, x = 'Time (s)', y = 'Open Loop',height=500)
 
 
 
