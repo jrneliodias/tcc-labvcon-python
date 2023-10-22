@@ -155,7 +155,19 @@ def gpc_siso_tab_form():
 
 def gpc_mimo_tab_form():
     
-    transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='gpc_mimo_transfer_function_type')
+    tf_type_col, fgpc_col = st.columns(2)
+    with tf_type_col:
+        transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='gpc_mimo_transfer_function_type')
+    with fgpc_col:
+        f_gpc_mimo_checkbox = st.checkbox('Inserir filtro (F-GPC)?', key = 'f_gpc_mimo_checkbox')
+    
+    if f_gpc_mimo_checkbox:      
+        k_alpha_col, alpha_col = st.columns(2)
+        with k_alpha_col:
+            K_alpha = st.number_input(label='$K_{\\alpha}$',key='f_gpc_mimo_k_alpha_input')
+
+        with alpha_col:
+            alpha_fgpc = st.number_input(label='$\\alpha_{fgpc}$',step=0.1, min_value=0.0, max_value=1.0,key='f_gpc_mimo_alpha_input')
     
     st.write(' **Função de Transferência do Modelo:**')        
     help_text = 'Valores decimais como **0.9** ou **0.1, 0.993**. Para múltiplos valores, vírgula é necessário.'
@@ -264,13 +276,15 @@ def gpc_mimo_tab_form():
             gpcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
                                   gpc_mimo_ny_1,gpc_mimo_nu_1,gpc_mimo_lambda_1,
                                   gpc_mimo_ny_2,gpc_mimo_nu_2,gpc_mimo_lambda_2,future_inputs_checkbox,
-                                  gpc_single_reference, gpc_single_reference, gpc_single_reference)
+                                  gpc_single_reference, gpc_single_reference, gpc_single_reference,
+                                  f_gpc_mimo_checkbox, K_alpha, alpha_fgpc)
      
         elif reference_number == 'Múltiplas':
             gpcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
                                   gpc_mimo_ny_1,gpc_mimo_nu_1,gpc_mimo_lambda_1,
                                   gpc_mimo_ny_2,gpc_mimo_nu_2,gpc_mimo_lambda_2,future_inputs_checkbox, 
                                   gpc_mimo_reference1, gpc_mimo_reference2,gpc_mimo_reference3,
+                                  f_gpc_mimo_checkbox, K_alpha, alpha_fgpc,
                                   change_ref_instant2,change_ref_instant3)
         if cancel_button:
             st.rerun()

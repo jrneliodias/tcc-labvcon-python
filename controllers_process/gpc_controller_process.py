@@ -300,6 +300,7 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
                           gpc_mimo_ny_1:int,gpc_mimo_nu_1:int,gpc_mimo_lambda_1:float,
                           gpc_mimo_ny_2:int,gpc_mimo_nu_2:int,gpc_mimo_lambda_2:float,future_inputs_checkbox:bool,
                           gpc_multiple_reference1:float, gpc_multiple_reference2:float, gpc_multiple_reference3:float,
+                          f_gpc_mimo_checkbox, K_alpha, alpha_fgpc,
                           change_ref_instant2 = 1, change_ref_instant3 = 1):
 
     if num_coeff_1 == '':
@@ -358,7 +359,7 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     motors_power_packet = "0,0"
 
     # Model transfer Function 1
-    A_coeff_1, B_coeff_1 = convert_tf_2_discrete(num_coeff_1,den_coeff_1,transfer_function_type)
+    A_coeff_1, B_coeff_1 = convert_tf_2_discrete(num_coeff_1,den_coeff_1,transfer_function_type,f_gpc_mimo_checkbox, K_alpha, alpha_fgpc)
     
     # print(A_coeff)
     # print(B_coeff)
@@ -366,7 +367,7 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     B_order = len(B_coeff_1)-1 # Zero holder aumenta um grau
 
     ## Model transfer Function 2
-    A_coeff_2, B_coeff_2 = convert_tf_2_discrete(num_coeff_2,den_coeff_2,transfer_function_type)
+    A_coeff_2, B_coeff_2 = convert_tf_2_discrete(num_coeff_2,den_coeff_2,transfer_function_type,f_gpc_mimo_checkbox, K_alpha, alpha_fgpc)
     
     # GPC CONTROLLER
     gpc_m1 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny_1,Nu=Nu_1,lambda_=lambda_1,
@@ -470,4 +471,7 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
 
     # Turn off the motor
     sendToArduino(arduinoData, '0,0')
+    
+    st.write(vars(gpc_m1))
+    st.write(vars(gpc_m2))
 
