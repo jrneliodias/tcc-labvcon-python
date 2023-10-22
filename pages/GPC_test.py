@@ -39,14 +39,33 @@ control_signal = np.zeros(samples_number)
 motors_power_packet = ["0"]*samples_number
 
 # Coefiientes do Modelo Smith motor 1
-Kpsmith1 = 0.999 #7.737
-thetasmith1 = 0.65
-tausmith1 = 1.827 #0.6
+# Kpsmith1 =  7.737 #0.999
+Kpsmith1 =  12.86 #0.999 # Motor 2
+thetasmith1 = 0.65 
+#tausmith1 = 1.827 #0.6
+tausmith1 =  0.6
 
+# #Gm1 = tf(0.8, [1, 2*0.3, 1]) # Second Order Transfer Function
+# alfa = 0.9
+# Bm1filter motor 1 
+# [0.12788, -0.11509]
 
+# Am1 discreto
+# [1, -0.9835]
+
+# Bm1filter motor 2
+# [0.193379, -0.1740418]
+
+# Am2 discreto
+# [1, -0.985]
+
+# Ny1 = Ny2 = 80
+
+# lambda1 = 200
+
+lambda2 = 200
 # Motor 1 Model Transfer Function
-# Gm1 = tf(Kpsmith1, [tausmith1, 1])
-Gm1 = tf(0.8, [1, 2*0.3, 1]) # Second Order Transfer Function
+Gm1 = tf(Kpsmith1, [tausmith1, 1])
 Gmz1 = c2d(Gm1, sampling_time)
 num1, den1 = tfdata(Gmz1)
 Bm1 = num1[0][0]
@@ -63,12 +82,18 @@ st.write(f'a1m1 = {a1m1}')
 
 b0m1 = Bm1[0]
 st.write(f'b0m1 = {b0m1}')
+alpha = 0.9
+alpha_filter = np.array([1,-alpha])
+Bm1filter = np.convolve(alpha_filter,Bm1)
+'Bm1filter'
+Bm1filter
+
 
 A_order = len(Am1)-1
 B_order = len(Bm1)
 
 # GPC CONTROLLER
-gpc_m1 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny,Nu=Nu,lambda_=lambda_,ts=sampling_time,Am=Am1, Bm=Bm1)
+gpc_m1 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny,Nu=Nu,lambda_=lambda_,ts=sampling_time,Am=Am1, Bm=Bm1filter)
 gpc_m1.calculateController()
 st.write(vars(gpc_m1))
 
