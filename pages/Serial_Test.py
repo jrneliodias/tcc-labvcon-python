@@ -2,8 +2,7 @@ from connections import *
 from components import *
 from session_state import *
 import streamlit as st
-import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from formatterInputs import *
 from controllers_process.validations_functions import plot_chart_validation
 
