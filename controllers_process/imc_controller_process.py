@@ -101,17 +101,8 @@ def imcControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
             
             if kk <= A_order:
                 # Store the output process values and control signal
-                current_timestamp = datetime.now()
-                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
-                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
-                kk += 1
-
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
-                
                 sendToArduino(arduinoData, '0')
-                
-
+          
             # ---- Motor Model Output
             elif kk == 1 and A_order == 1:
                 model_output_1[kk] = dot(-A_coeff[1:], model_output_1[kk-1::-1])\
@@ -124,25 +115,8 @@ def imcControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
 
                 # Control Signal
                 manipulated_variable_1[kk] = dot(-B_delta[1:],manipulated_variable_1[kk-1::-1])+ (1-alpha1)*dot(A_coeff,erro1[kk::-1])
-                manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta[0]
-                # Control Signal Saturation
-                manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
-            
-
-                # Motor Power String Formatation
-                motors_power_packet = f"{manipulated_variable_1[kk]}\r"
-
-                sendToArduino(arduinoData, motors_power_packet)
+                manipulated_variable_1[kk] /= B_delta[0]
                 
-                # Store the output process values and control signal
-                current_timestamp = datetime.datetime.now()
-                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
-                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
-                kk += 1
-
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
-                                        
             elif kk >A_order:
                 
                 # print(f'kk == {kk}')
@@ -160,23 +134,24 @@ def imcControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
 
                 # Control Signal
                 manipulated_variable_1[kk] = dot(-B_delta[1:],manipulated_variable_1[kk-1:kk-B_order-1:-1])+ (1-alpha1)*dot(A_coeff,erro1[kk:kk-A_order-1:-1])
-                manipulated_variable_1[kk] = manipulated_variable_1[kk]/B_delta[0]
-                # Control Signal Saturation
-                manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
+                manipulated_variable_1[kk] /= B_delta[0]
             
+            
+            # Control Signal Saturation
+            manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
 
-                # Motor Power String Formatation
-                motors_power_packet = f"{manipulated_variable_1[kk]}\r"
-                sendToArduino(arduinoData, motors_power_packet)
+            # Motor Power String Formatation
+            motors_power_packet = f"{manipulated_variable_1[kk]}\r"
+            sendToArduino(arduinoData, motors_power_packet)
                 
-                # Store the output process values and control signal
-                current_timestamp = datetime.now()
-                process_output_sensor[str(current_timestamp)] = float(process_output[kk])
-                control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
-                kk += 1
+            # Store the output process values and control signal
+            current_timestamp = datetime.now()
+            process_output_sensor[str(current_timestamp)] = float(process_output[kk])
+            control_signal_1[str(current_timestamp)] = float(manipulated_variable_1[kk])
+            kk += 1
 
-                percent_complete = kk / (samples_number)
-                my_bar.progress(percent_complete, text=progress_text)
+            percent_complete = kk / (samples_number)
+            my_bar.progress(percent_complete, text=progress_text)
 
     # Turn off the motor
     sendToArduino(arduinoData, '0')
