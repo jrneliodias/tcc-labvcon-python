@@ -154,7 +154,8 @@ def gpc_siso_tab_form():
 
 
 def gpc_mimo_tab_form():
-    
+    K_alpha =0
+    alpha_fgpc=0
     tf_type_col, fgpc_col = st.columns(2)
     with tf_type_col:
         transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='gpc_mimo_transfer_function_type')

@@ -5,6 +5,7 @@ from connections import *
 from session_state import get_session_variable
 from controllers_process.performace_metrics import *
 from numpy import convolve,array
+import altair as alt
 
 def coefficients_validations(coeff_string):
     if  coeff_string == '':
@@ -21,7 +22,67 @@ def plot_chart_validation(plot_variable,y:str,height= 200, x = 'Time (s)'):
     
     return st.line_chart(data= plot_variable,x = x, y = y,height=height)
 
-def convert_tf_2_discrete(num_coeff:str,den_coeff:str,tf_type:str,f_gpc_mimo_checkbox:bool, K_alpha:float|None  = 0, alpha_fgpc:float|None = 0):
+
+
+def altair_plot_chart_validation(plot_variable:pd.DataFrame,y_column:str, y_max,y_min, control:bool = False, height= 200, x_column = 'Time (s)'):
+    if plot_variable is None:
+        return None
+    if plot_variable.empty:
+        return None
+    
+    if control:    
+        chart = altair_chart_control_signal(plot_variable,y_column,height=height,y_max=y_max,y_min=y_min,x_column=x_column)
+    else:
+        chart = altair_chart_process_output(plot_variable,y_column,x_column)
+    
+    
+    return st.altair_chart(chart, use_container_width=True)
+
+
+
+def altair_chart_process_output(dataframe,y_column:str , x_column = 'Time (s)'):
+    # Create the Altair chart
+    reference = alt.Chart(data=dataframe).mark_line().encode(x=x_column, y=y_column[0], color = alt.value('red'))
+
+    process_output = alt.Chart(data=dataframe).mark_line().encode(x=x_column, y=y_column[1],color=alt.value('steelblue'))
+    
+    hover = alt.selection_point(
+        fields=["Time (s)"],
+        nearest=True,
+        on="mouseover",
+        empty=True,
+    )
+    points = process_output.transform_filter(hover).mark_circle(size=65)
+
+    # Draw a rule at the location of the selection
+    tooltips = (
+        alt.Chart(dataframe)
+        .mark_rule()
+        .encode(
+            x="Time (s)",
+            y=y_column[1],
+            opacity=alt.condition(hover, alt.value(0.3), alt.value(0)),
+            tooltip=[
+                alt.Tooltip(x_column, title="Time (s)"),
+                alt.Tooltip(y_column[1], title="Process Output"),
+            ],
+        )
+        .add_params(hover)
+    )
+    chart = alt.layer(reference,process_output,points,tooltips).configure_legend( orient='bottom').interactive()
+
+    return chart 
+
+def altair_chart_control_signal(data,y_column:str,y_min:int,y_max:int ,height= 200, x_column = 'Time (s)'):
+    # Create the Altair chart
+    chart = alt.Chart(data=data).mark_line().encode(
+                x=x_column, y=alt.Y(y_column, scale=alt.Scale(domain=[y_min, y_max]))).interactive()
+            
+    chart = chart.properties(height=height)
+
+    return chart
+
+def convert_tf_2_discrete(num_coeff:str,den_coeff:str,tf_type:str,f_gpc_mimo_checkbox:bool= False, K_alpha:float|None  = 0, alpha_fgpc:float|None = 0):
     
     sampling_time = get_session_variable('sampling_time')
     num_coeff_float = string2floatArray(num_coeff)

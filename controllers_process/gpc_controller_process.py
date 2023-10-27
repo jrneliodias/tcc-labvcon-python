@@ -300,7 +300,7 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
                           gpc_mimo_ny_1:int,gpc_mimo_nu_1:int,gpc_mimo_lambda_1:float,
                           gpc_mimo_ny_2:int,gpc_mimo_nu_2:int,gpc_mimo_lambda_2:float,future_inputs_checkbox:bool,
                           gpc_multiple_reference1:float, gpc_multiple_reference2:float, gpc_multiple_reference3:float,
-                          f_gpc_mimo_checkbox, K_alpha, alpha_fgpc,
+                          f_gpc_mimo_checkbox=False, K_alpha=0, alpha_fgpc=0,
                           change_ref_instant2 = 1, change_ref_instant3 = 1):
 
     if num_coeff_1 == '':
