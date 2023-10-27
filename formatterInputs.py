@@ -43,7 +43,7 @@ def datetime_obj_to_elapsed_time(variable:str)->dict:
 def dictionary_to_pandasDataframe(variable:dict,variable_name_column:str)->pd.DataFrame:
 
     # Convert the inner dictionary to a list of dictionaries
-    data_list = [{"Time (s)": timestamp, f"{variable_name_column}": value} for timestamp, value in variable.items()]
+    data_list = [{"Time (s)": float(timestamp), f"{variable_name_column}": float(value)} for timestamp, value in variable.items()]
 
     # Create a DataFrame from the list of dictionaries
     variable_dataframe = pd.DataFrame(data_list)
