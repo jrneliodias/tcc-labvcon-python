@@ -24,26 +24,41 @@ def imc_Controller_Interface():
             imc_mimo_tab_form()
            
     with graphics_col:
+         #plot_chart_validation(control_signal_2_dataframe, x = 'Time (s)', y = 'Control Signal 2',height=200)
+        y_max = get_session_variable('saturation_max_value')
+        y_min = get_session_variable('saturation_min_value')
 
         if get_session_variable('process_output_sensor'):
             process_output_dataframe = dataframeToPlot('process_output_sensor','Process Output','reference_input')
             st.subheader('Resposta do Sistema')
-            plot_chart_validation(process_output_dataframe, x = 'Time (s)', y = ['Reference','Process Output'],height=500)
-                
+            #plot_chart_validation(process_output_dataframe, x = 'Time (s)', y = ['Reference','Process Output'],height=500)
+            altair_plot_chart_validation(process_output_dataframe, 
+                                         y_max = y_max,y_min = y_min, 
+                                         x_column = 'Time (s)', y_column = ['Reference','Process Output'],
+                                         )    
         st.subheader('Sinal de Controle')
         if get_session_variable('control_signal_1'):
             control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
             control_signal_1_dataframe = dictionary_to_pandasDataframe(control_signal_with_elapsed_time,'Control Signal 1')
             
-            plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
+            #plot_chart_validation(control_signal_1_dataframe, x = 'Time (s)', y = 'Control Signal 1',height=200)
         
+           
+            altair_plot_chart_validation(control_signal_1_dataframe,control= True, 
+                                         y_max = y_max,y_min = y_min, 
+                                         x_column = 'Time (s)', y_column = 'Control Signal 1',
+                                         height=250)
         
         if get_session_variable('control_signal_2'):
             control_signal_2_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_2')
             control_signal_2_dataframe = dictionary_to_pandasDataframe(control_signal_2_with_elapsed_time,'Control Signal 2')
             
-            plot_chart_validation(control_signal_2_dataframe, x = 'Time (s)', y = 'Control Signal 2',height=200)
-            
+           
+           
+            altair_plot_chart_validation(control_signal_2_dataframe,control= True, 
+                                         y_max = y_max,y_min = y_min, 
+                                         x_column = 'Time (s)', y_column = 'Control Signal 2',
+                                         height=250)
         
         
     st.write('### Índices de Desempenho')
