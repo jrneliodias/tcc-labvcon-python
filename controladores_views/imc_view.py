@@ -31,11 +31,11 @@ def imc_Controller_Interface():
         if get_session_variable('process_output_sensor'):
             process_output_dataframe = dataframeToPlot('process_output_sensor','Process Output','reference_input')
             st.subheader('Resposta do Sistema')
-            #plot_chart_validation(process_output_dataframe, x = 'Time (s)', y = ['Reference','Process Output'],height=500)
-            altair_plot_chart_validation(process_output_dataframe, 
-                                         y_max = y_max,y_min = y_min, 
-                                         x_column = 'Time (s)', y_column = ['Reference','Process Output'],
-                                         )    
+            plot_chart_validation(process_output_dataframe, x = 'Time (s)', y = ['Reference','Process Output'],height=500)
+        #     altair_plot_chart_validation(process_output_dataframe, 
+        #                                  y_max = y_max,y_min = y_min, 
+        #                                  x_column = 'Time (s)', y_column = ['Reference','Process Output'],
+        #                                  )    
         st.subheader('Sinal de Controle')
         if get_session_variable('control_signal_1'):
             control_signal_with_elapsed_time = datetime_obj_to_elapsed_time('control_signal_1')
