@@ -58,7 +58,22 @@ def gpc_Controller():
 
 
 def gpc_siso_tab_form():
-    transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='transfer_function_type')
+    K_alpha = 0
+    alpha_fgpc= 0
+    controller_type = st.selectbox('Tipo do Controlador',["GPC/FGPC","PID"])
+    tf_type_col, fgpc_col = st.columns(2)
+    with tf_type_col:
+        transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='gpc_siso_transfer_function_type')
+    with fgpc_col:
+        f_gpc_siso_checkbox = st.checkbox('Inserir filtro (F-GPC)?', key = 'f_gpc_siso_checkbox')
+    
+    if f_gpc_siso_checkbox:      
+        k_alpha_col, alpha_col = st.columns(2)
+        with k_alpha_col:
+            K_alpha = st.number_input(label='$K_{\\alpha}$',key='f_gpc_mimo_k_alpha_input')
+
+        with alpha_col:
+            alpha_fgpc = st.number_input(label='$\\alpha_{fgpc}$',step=0.1, min_value=0.0, max_value=1.0,key='f_gpc_mimo_alpha_input')
             
     help_text = 'Valores decimais como **0.9** ou **0.1, 0.993**. Para múltiplos valores, vírgula é necessário.'
     st.write(' **Função de Transferência do Modelo:**')
@@ -82,7 +97,7 @@ def gpc_siso_tab_form():
 
     if reference_number == 'Única':
         gpc_single_reference = st.number_input(
-        'Referência:', value=50, step=1, min_value=0, max_value=90, key='gpc_siso_single_reference')
+        'Referência:', value=50, step=1, min_value=0, key='gpc_siso_single_reference')
         
     else:
         col21, col22, col23 = st.columns(3)
@@ -97,7 +112,7 @@ def gpc_siso_tab_form():
 
         with col21:
             gpc_siso_multiple_reference1 = st.number_input(
-                'Referência 1:', value=30.0, step=1.0, min_value=0.0, max_value=90.0, key='siso_gpc_multiple_reference1')
+                'Referência 1:', value=30.0, step=1.0, min_value=0.0, key='siso_gpc_multiple_reference1')
 
         changeReferenceCol1, changeReferenceCol2 = st.columns(2)
 
@@ -132,30 +147,49 @@ def gpc_siso_tab_form():
             
     with start_col:        
         start_button = st.button('Iniciar', type='primary', key='gpc_siso_button')
-    
-    if start_button:       
-        if reference_number == 'Única':
+    if start_button: 
+        if controller_type == 'GPC/FGPC':      
+            if reference_number == 'Única':
+                
+                gpcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,
+                                    gpc_siso_ny,gpc_siso_nu,gpc_siso_lambda,future_inputs_checkbox,
+                                    gpc_single_reference, gpc_single_reference, gpc_single_reference,
+                                    f_gpc_siso_checkbox, K_alpha, alpha_fgpc)
+                
+            elif reference_number == 'Múltiplas':
+                gpcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,
+                                    gpc_siso_ny,gpc_siso_nu,gpc_siso_lambda,future_inputs_checkbox,
+                                    gpc_siso_multiple_reference1, gpc_siso_multiple_reference2, gpc_siso_multiple_reference3, 
+                                    f_gpc_siso_checkbox, K_alpha, alpha_fgpc,
+                                    siso_change_ref_instant2,siso_change_ref_instant3)
             
-            gpcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,
-                                  gpc_siso_ny,gpc_siso_nu,gpc_siso_lambda,future_inputs_checkbox,
-                                  gpc_single_reference, gpc_single_reference, gpc_single_reference)
-            
-        elif reference_number == 'Múltiplas':
-            gpcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,
-                                  gpc_siso_ny,gpc_siso_nu,gpc_siso_lambda,future_inputs_checkbox,
-                                  gpc_siso_multiple_reference1, gpc_siso_multiple_reference2, gpc_siso_multiple_reference3, 
-                                  siso_change_ref_instant2,siso_change_ref_instant3)
+            if cancel_button:
+                st.rerun()
         
-        if cancel_button:
-            st.rerun()
-
+        if controller_type == 'PID':      
+            if reference_number == 'Única':
+                
+                gpcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,
+                                    gpc_siso_ny,gpc_siso_nu,gpc_siso_lambda,future_inputs_checkbox,
+                                    gpc_single_reference, gpc_single_reference, gpc_single_reference)
+                
+            elif reference_number == 'Múltiplas':
+                gpcControlProcessSISO(transfer_function_type,num_coeff,den_coeff,
+                                    gpc_siso_ny,gpc_siso_nu,gpc_siso_lambda,future_inputs_checkbox,
+                                    gpc_siso_multiple_reference1, gpc_siso_multiple_reference2, gpc_siso_multiple_reference3, 
+                                    siso_change_ref_instant2,siso_change_ref_instant3)
+            
+            if cancel_button:
+                st.rerun()
+        
+    
 
 
 
 
 def gpc_mimo_tab_form():
-    K_alpha =0
-    alpha_fgpc=0
+    K_alpha = 0
+    alpha_fgpc= 0
     tf_type_col, fgpc_col = st.columns(2)
     with tf_type_col:
         transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='gpc_mimo_transfer_function_type')

@@ -124,7 +124,7 @@ def imc_siso_tab_form():
                 'Instante da referência 2 (s):', value=calculate_time_limit()/2,step=1.0, min_value=0.0, max_value=siso_change_ref_instant3, key='siso_change_ref_instant2')
         
     imc_sr_tau_mf1 = st.number_input(
-                'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, key='imc_sr_tau_mf1')
+                'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, key='imc_sr_tau_mf1',format='%.2f')
     
     if st.button('Iniciar', type='primary', key='imc_siso_button'):
         
@@ -139,7 +139,7 @@ def imc_siso_tab_form():
 
 
 
-
+#%d %e %f %g %i %u.
 
 def imc_mimo_tab_form():
     

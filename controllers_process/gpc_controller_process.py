@@ -144,6 +144,7 @@ class GeneralizedPredictiveController:
 def gpcControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str,
                           gpc_siso_ny:int,gpc_siso_nu:int,gpc_siso_lambda:float,future_inputs_checkbox:bool,
                           gpc_multiple_reference1:float, gpc_multiple_reference2:float, gpc_multiple_reference3:float,
+                          f_gpc_mimo_checkbox=False, K_alpha=0, alpha_fgpc=0,
                           change_ref_instant2 = 1, change_ref_instant3 = 1):
     
     if num_coeff == '':
@@ -191,7 +192,7 @@ def gpcControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
     serial_data_pack = "0"
 
     # Model transfer Function
-    A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff,transfer_function_type)
+    A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff,transfer_function_type,f_gpc_mimo_checkbox, K_alpha, alpha_fgpc)
     
     # print(A_coeff)
     # print(B_coeff)
@@ -284,15 +285,138 @@ def gpcControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str
     sendToArduino(arduinoData, '0')
 
 
-def future_inputs_selection(future_inputs_checkbox,kk,Ny,reference_input):
-    if future_inputs_checkbox:
-    # Referência futura conhecidax
-        aux_ref = reference_input[kk:kk+Ny]
-    else:
-    #  Referência futura desconhecida
-        aux_ref = reference_input[kk]*np.ones(Ny)
+
+def gpcPidControlProcessSISO(transfer_function_type:str,num_coeff:str,den_coeff:str,
+                          gpc_siso_ny:int,gpc_siso_nu:int,gpc_siso_lambda:float,future_inputs_checkbox:bool,
+                          gpc_multiple_reference1:float, gpc_multiple_reference2:float, gpc_multiple_reference3:float,
+                          f_gpc_mimo_checkbox=False, K_alpha=0, alpha_fgpc=0,
+                          change_ref_instant2 = 1, change_ref_instant3 = 1):
+    
+    if num_coeff == '':
+        return st.error('Coeficientes incorretos no Numerador.')
+    
+    if den_coeff =='':
+        return st.error('Coeficientes incorretos no Denominador.')
+
+    # Receber os valores de tempo de amostragem e número de amostras da sessão
+    sampling_time = get_session_variable('sampling_time')
+    samples_number = get_session_variable('samples_number')
+    
+    if 'arduinoData' not in st.session_state.connected:
+        return st.warning('Arduino não conectado!')
+    
+    # Receber o objeto arduino da sessão
+    arduinoData = st.session_state.connected['arduinoData']
+
+    # GPC Controller Project
+    
+    Ny = gpc_siso_ny
+    Nu = gpc_siso_nu
+    lambda_ = gpc_siso_lambda
+
+    # Initial Conditions
+    process_output = np.zeros(samples_number)
+    delta_control_signal = np.zeros(samples_number)
+
+    # Take the index of time to change the referencee
+    instant_sample_2 = get_sample_position(sampling_time, samples_number, change_ref_instant2)
+    instant_sample_3 = get_sample_position(sampling_time, samples_number, change_ref_instant3)
+
+    reference_input = gpc_multiple_reference1*np.ones(samples_number+Ny)
+    reference_input[instant_sample_2:instant_sample_3] = gpc_multiple_reference2
+    reference_input[instant_sample_3:] = gpc_multiple_reference3
+    set_session_controller_parameter('reference_input',reference_input[:samples_number].tolist())
+    # st.session_state.controller_parameters['reference_input'] = reference_input.tolist()
+
+    # Power Saturation
+    max_pot = get_session_variable('saturation_max_value')
+    min_pot = get_session_variable('saturation_min_value')
+
+    # Manipulated variable
+    manipulated_variable_1 = np.zeros(samples_number)
+    serial_data_pack = "0"
+
+    # Model transfer Function
+    A_coeff, B_coeff = convert_tf_2_discrete(num_coeff,den_coeff,transfer_function_type,f_gpc_mimo_checkbox, K_alpha, alpha_fgpc)
+    
+    # print(A_coeff)
+    # print(B_coeff)
+    A_order = len(A_coeff)-1
+    B_order = len(B_coeff)
+    
+    
+  
+    # GPC CONTROLLER
+    gpc_m1 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny,Nu=Nu,lambda_=lambda_,
+                                             ts=sampling_time,Am=A_coeff, Bm=B_coeff)
+    gpc_m1.calculateController()
+
+    # clear previous control signal values
+    set_session_controller_parameter('control_signal_1',dict())
+    control_signal_1 = get_session_variable('control_signal_1')
+    
+    # clear previous control signal values
+    set_session_controller_parameter('process_output_sensor',dict())
+    process_output_sensor = get_session_variable('process_output_sensor')
+    
+    ## ---- Cáculo dos elementos do sinal de controle R, S e T
+    T_1 = sum(gpc_m1.Kgpc);                       # polinômio que afeta o sinal de entrada
+    S_1 = np.dot(gpc_m1.Kgpc,gpc_m1.F);           # polinômio que afeta as saída preditas
+    R_1 = np.dot(gpc_m1.Kgpc,gpc_m1.H);           # polinômio que afeta a ação de controle passada du(t-1);
+    R_1 = np.insert(R_1,0,1)
+
+    # inicializar  o timer
+    start_time = time.time()
+    kk = 0
+
+    # Inicializar a barra de progresso
+    progress_text = "Operation in progress. Please wait."
+    my_bar = st.progress(0, text=progress_text)
+    
+    # receive the first mesure 
+    sendToArduino(arduinoData, "0")
+    
+
+    while kk < samples_number:
+        current_time = time.time()
+        if current_time - start_time > sampling_time:
+            start_time = current_time
+            
+            # -----  Angle Sensor Output
+            # print(f'kk = {kk}')
+            process_output[kk] = readFromArduino(arduinoData)
+
+            if kk <= A_order:
+                sendToArduino(arduinoData, '0,0')     
+            
+            # Controle via estrutura RST
+            elif kk == 1 and A_order == 1:
+                delta_control_signal[kk] = -R_1[1]*delta_control_signal[kk-1] + T_1*reference_input[kk] - np.dot(S_1,process_output[kk::-1])
+            
+            elif kk > A_order:
+                delta_control_signal[kk] = -R_1[1]*delta_control_signal[kk-1] + T_1*reference_input[kk] - np.dot(S_1,process_output[kk:kk-A_order-1:-1])
+                manipulated_variable_1[kk] = manipulated_variable_1[kk-1] + delta_control_signal[kk]
+            
+            # Control Signal Saturation
+            manipulated_variable_1[kk] = max(min_pot, min(manipulated_variable_1[kk], max_pot))
         
-    return aux_ref
+
+            # Motor Power String Formatation
+            serial_data_pack = f"{manipulated_variable_1[kk]}\r"
+            sendToArduino(arduinoData, serial_data_pack)
+                
+            
+            # Store the output process values and control signal
+            current_timestamp = str(datetime.now())
+            process_output_sensor[current_timestamp] = float(process_output[kk])
+            control_signal_1[current_timestamp] = float(manipulated_variable_1[kk])
+            kk += 1
+
+            percent_complete = kk / (samples_number)
+            my_bar.progress(percent_complete, text=progress_text)
+
+    # Turn off the motor
+    sendToArduino(arduinoData, '0')
 
 
 
@@ -475,3 +599,16 @@ def gpcControlProcessTISO(transfer_function_type:str,num_coeff_1:str,den_coeff_1
     st.write(vars(gpc_m1))
     st.write(vars(gpc_m2))
 
+
+
+
+
+def future_inputs_selection(future_inputs_checkbox,kk,Ny,reference_input):
+    if future_inputs_checkbox:
+    # Referência futura conhecidax
+        aux_ref = reference_input[kk:kk+Ny]
+    else:
+    #  Referência futura desconhecida
+        aux_ref = reference_input[kk]*np.ones(Ny)
+        
+    return aux_ref
