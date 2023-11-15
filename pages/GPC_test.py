@@ -24,10 +24,10 @@ if 'arduinoData' in st.session_state.connected:
 else:
     st.warning('Arduino não conectado')
 
-Ny_1 = 100
+Ny_1 = 90
 Nu_1 = 1
 lambda_1 = 200
-Ny_2 = 100
+Ny_2 = 90
 Nu_2 = 1
 lambda_2 = 200
 sampling_time = 0.01
@@ -137,6 +137,7 @@ gpc_m1 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny_1,Nu=Nu_1,lam
 gpc_m2 = GeneralizedPredictiveController(nit= samples_number,Ny=Ny_2,Nu=Nu_2,lambda_=lambda_2,ts=sampling_time,Am=Am2, Bm=Bm2_filter)
 gpc_m1.calculateController()
 gpc_m2.calculateController()
+st.write(vars(gpc_m1))
 st.write(vars(gpc_m2))
 
 
