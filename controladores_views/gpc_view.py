@@ -65,7 +65,7 @@ def gpc_siso_tab_form():
     with tf_type_col:
         transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='gpc_siso_transfer_function_type')
     with fgpc_col:
-        f_gpc_siso_checkbox = st.checkbox('Inserir filtro (F-GPC)?', key = 'f_gpc_siso_checkbox')
+        f_gpc_siso_checkbox = st.checkbox('Inserir filtro (FPGPC)?', key = 'f_gpc_siso_checkbox')
     
     if f_gpc_siso_checkbox:      
         k_alpha_col, alpha_col = st.columns(2)
