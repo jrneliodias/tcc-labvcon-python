@@ -1,5 +1,4 @@
 
-from controladores_views.pid_view import *
 from controladores_views.gmv_view import *
 from controladores_views.gpc_view import *
 from controladores_views.imc_view import *
