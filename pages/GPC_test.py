@@ -150,14 +150,30 @@ future_inputs = 1
 
 ## ---- Cáculo dos elementos do sinal de controle R, S e T
 T_1 = sum(gpc_m1.Kgpc);                       # polinômio que afeta o sinal de entrada
-S_1 = np.dot(gpc_m1.Kgpc,gpc_m1.F);           # polinômio que afeta as saída preditas
+S_1 = np.dot(gpc_m1.Kgpc,gpc_m1.F);
+S_1# polinômio que afeta as saída preditas
 R_1 = np.dot(gpc_m1.Kgpc,gpc_m1.H);           # polinômio que afeta a ação de controle passada du(t-1);
 R_1 = np.insert(R_1,0,1)
 T_2 = sum(gpc_m2.Kgpc);                       # polinômio que afeta o sinal de entrada
-S_2 = np.dot(gpc_m2.Kgpc,gpc_m2.F);           # polinômio que afeta as saída preditas
+S_2 = np.dot(gpc_m2.Kgpc,gpc_m2.F);         # polinômio que afeta as saída preditas
 R_2 = np.dot(gpc_m2.Kgpc,gpc_m2.H);           # polinômio que afeta a ação de controle passada du(t-1);
 R_2 = np.insert(R_2,0,1)
 # st.write(R)
+
+# Paramêtros do PID
+if len(S_1) == 2 and len(S_2)==2:
+    S_1 = np.append(S_1,0)
+    S_2 = np.append(S_2,0)
+    
+kc1 = S_1[0] - T_1 - S_1[2]
+ti1 = (kc1)/(sum(S_1))
+td1 = -S_1[2]/kc1
+st.write(kc1,ti1,td1)   
+kc2 = S_2[0] - T_2 - S_2[2]
+ti2 = (kc2)/(sum(S_2))
+td2 = -S_2[2]/kc2
+st.write(kc2,ti2,td2)   
+
 
 if st.button('Iniciar Simulação'):
     # Inicializar a barra de progresso
@@ -233,13 +249,13 @@ if st.button('Iniciar Simulação'):
             output_sensor[kk] = readFromArduino(arduinoData)
             
             #output_sensor[kk] = np.dot(-Am1[1:],output_sensor[kk-1:kk-A_order-1:-1]) + np.dot(Bm1,control_signal[kk-1:kk-B_order-1:-1])       
-         
+        #  -R_1[1]*delta_control_signal_1[kk-1]
             # Controle via estrutura RST
-            delta_control_signal_1[kk] = -R_1[1]*delta_control_signal_1[kk-1] + T_1*reference_input[kk] - np.dot(S_1,output_sensor[kk:kk-A_order-1:-1])
+            delta_control_signal_1[kk] =  + T_1*reference_input[kk] - np.dot(S_1,output_sensor[kk:kk-A_order-1:-1])
             
             control_signal_1[kk] = control_signal_1[kk-1] + delta_control_signal_1[kk]
-            
-            delta_control_signal_2[kk] = -R_2[1]*delta_control_signal_2[kk-1] + T_2*reference_input[kk] - np.dot(S_2,output_sensor[kk:kk-A_order-1:-1])
+            # -R_2[1]*delta_control_signal_2[kk-1]
+            delta_control_signal_2[kk] = + T_2*reference_input[kk] - np.dot(S_2,output_sensor[kk:kk-A_order-1:-1])
             control_signal_2[kk] = control_signal_2[kk-1] - delta_control_signal_2[kk]
             
             # Control Signal Saturation

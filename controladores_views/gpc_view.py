@@ -2,7 +2,7 @@ import streamlit as st
 from formatterInputs import *
 from connections import *
 from controllers_process.validations_functions import *
-from controllers_process.gpc_controller_process import gpcControlProcessSISO,gpcControlProcessTISO
+from controllers_process.gpc_controller_process import gpcControlProcessSISO,gpcControlProcessTISO,gpcPIDControlProcessTISO
 
 def gpc_Controller():
     st.header('Generalized Predictive Control (GPC)')
@@ -190,11 +190,12 @@ def gpc_siso_tab_form():
 def gpc_mimo_tab_form():
     K_alpha = 0
     alpha_fgpc= 0
+    controller_type = st.selectbox('Tipo do Controlador',["GPC/FGPC","PID"],key='GPC_controller_type')
     tf_type_col, fgpc_col = st.columns(2)
     with tf_type_col:
         transfer_function_type = st.radio('**Tipo de Função de Transferência**',['Continuo','Discreto'],horizontal=True,key='gpc_mimo_transfer_function_type')
     with fgpc_col:
-        f_gpc_mimo_checkbox = st.checkbox('Inserir filtro (F-GPC)?', key = 'f_gpc_mimo_checkbox')
+        f_gpc_mimo_checkbox = st.checkbox('Inserir filtro (FPGPC)?', key = 'f_gpc_mimo_checkbox')
     
     if f_gpc_mimo_checkbox:      
         k_alpha_col, alpha_col = st.columns(2)
@@ -305,23 +306,47 @@ def gpc_mimo_tab_form():
     with start_col:        
         start_button = st.button('Iniciar', type='primary', key='gpc_mimo_button')
     
-    if start_button:
-        if reference_number == 'Única':
-            
-            gpcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
+    
+
+    if start_button: 
+            if controller_type == 'GPC/FGPC':      
+                if reference_number == 'Única':
+                    
+                   gpcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
                                   gpc_mimo_ny_1,gpc_mimo_nu_1,gpc_mimo_lambda_1,
                                   gpc_mimo_ny_2,gpc_mimo_nu_2,gpc_mimo_lambda_2,future_inputs_checkbox,
                                   gpc_single_reference, gpc_single_reference, gpc_single_reference,
                                   f_gpc_mimo_checkbox, K_alpha, alpha_fgpc)
-     
-        elif reference_number == 'Múltiplas':
-            gpcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
+                    
+                elif reference_number == 'Múltiplas':
+                    gpcControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
                                   gpc_mimo_ny_1,gpc_mimo_nu_1,gpc_mimo_lambda_1,
                                   gpc_mimo_ny_2,gpc_mimo_nu_2,gpc_mimo_lambda_2,future_inputs_checkbox, 
                                   gpc_mimo_reference1, gpc_mimo_reference2,gpc_mimo_reference3,
                                   f_gpc_mimo_checkbox, K_alpha, alpha_fgpc,
                                   change_ref_instant2,change_ref_instant3)
-        if cancel_button:
-            st.rerun()
-
-
+                
+                if cancel_button:
+                    st.rerun()
+            
+            if controller_type == 'PID':      
+                if reference_number == 'Única':
+                    
+                    gpcPIDControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
+                                  gpc_mimo_ny_1,gpc_mimo_nu_1,gpc_mimo_lambda_1,
+                                  gpc_mimo_ny_2,gpc_mimo_nu_2,gpc_mimo_lambda_2,future_inputs_checkbox,
+                                  gpc_single_reference, gpc_single_reference, gpc_single_reference,
+                                  f_gpc_mimo_checkbox, K_alpha, alpha_fgpc)
+                    
+                elif reference_number == 'Múltiplas':
+                    gpcPIDControlProcessTISO(transfer_function_type,num_coeff_1,den_coeff_1, num_coeff_2,den_coeff_2,
+                                  gpc_mimo_ny_1,gpc_mimo_nu_1,gpc_mimo_lambda_1,
+                                  gpc_mimo_ny_2,gpc_mimo_nu_2,gpc_mimo_lambda_2,future_inputs_checkbox, 
+                                  gpc_mimo_reference1, gpc_mimo_reference2,gpc_mimo_reference3,
+                                  f_gpc_mimo_checkbox, K_alpha, alpha_fgpc,
+                                  change_ref_instant2,change_ref_instant3)
+                
+                if cancel_button:
+                    st.rerun()
+            
+    
