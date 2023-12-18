@@ -123,8 +123,8 @@ def imc_siso_tab_form():
             siso_change_ref_instant2 = st.number_input(
                 'Instante da referência 2 (s):', value=calculate_time_limit()/2,step=1.0, min_value=0.0, max_value=siso_change_ref_instant3, key='siso_change_ref_instant2')
         
-    imc_sr_tau_mf1 = st.number_input(
-                'Constante de Tempo de Malha Fechada ($\\tau$)', value=0.9, step=0.1, min_value=0.0, key='imc_sr_tau_mf1',format='%.2f')
+    imc_sr_tau_mf1 = float(st.text_input(
+                'Constante de Tempo de Malha Fechada ($\\tau$)',value="0.9", key='imc_sr_tau_mf1'))
     
     if st.button('Iniciar', type='primary', key='imc_siso_button'):
         
@@ -138,8 +138,6 @@ def imc_siso_tab_form():
 
 
 
-
-#%d %e %f %g %i %u.
 
 def imc_mimo_tab_form():
     
@@ -213,7 +211,7 @@ def imc_mimo_tab_form():
 
         with changeReferenceCol2:
             change_ref_instant3 = st.number_input(
-                'Instante da referência 3 (s):', value=calculate_time_limit()*3/4, step=0.1, min_value=0.0, max_value=calculate_time_limit(), key='imc_mimo_change_ref_instant3')
+                'Instante da referência 3 (s):', value=calculate_time_limit()*3/4, step=1.0, min_value=0.0, max_value=calculate_time_limit(), key='imc_mimo_change_ref_instant3')
 
         with changeReferenceCol1:
             change_ref_instant2 = st.number_input(
@@ -222,11 +220,9 @@ def imc_mimo_tab_form():
     st.write('Constante de Tempo de Malha Fechada ($\\tau$)')
     tau_mf_col1, tau_mf_col2 = st.columns(2)
     with tau_mf_col1:
-        imc_mimo_tau_mf1 = st.number_input(
-            '$\\tau_1$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='imc_mr_tau_mf1')
+        imc_mimo_tau_mf1 = float(st.text_input('$\\tau_1$', value="0.9", key='imc_mr_tau_mf1'))
     with tau_mf_col2:
-        imc_mimo_tau_mf2 = st.number_input(
-            '$\\tau_2$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='imc_mr_tau_mf2')
+        imc_mimo_tau_mf2 = float(st.text_input('$\\tau_2$', value="0.9", key='imc_mr_tau_mf2'))
 
     if st.button('Receber Dados', type='primary', key='imc_mimo_setpoint_button'):
             

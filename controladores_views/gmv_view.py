@@ -111,8 +111,8 @@ def gmv_siso_tab_form():
             siso_change_ref_instant2 = st.number_input(
                 'Instante da referência 2 (s):', value=calculate_time_limit()/2,step=1.0, min_value=0.0, max_value=siso_change_ref_instant3, key='siso_change_ref_instant2')
         
-    gmv_siso_q0 = st.number_input(
-                'Magnitude do Sinal de Controle $Q(z^{-1})$', value=1.0, step=0.1, min_value=0.0, key='gmv_q0')
+    gmv_siso_q0 = float(st.text_input('Magnitude do Sinal de Controle $Q(z^{-1})$', value="1.0", key='gmv_q0'))
+    
     
     start_col,cancel_col = st.columns([0.2,0.8])
     with cancel_col:
@@ -223,12 +223,10 @@ def gmv_mimo_tab_form():
     st.write('Magnitude do Sinal de Controle $Q(z^{-1})$')
     tau_mf_col1, tau_mf_col2 = st.columns(2)
     with tau_mf_col1:
-        gmv_mimo_q01 = st.number_input(
-            '$Q_1(z^{-1})$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='gmv_mr_tau_mf1')
+        gmv_mimo_q01 = float(st.text_input('$Q_1(z^{-1})$', value="1.0", key='gmv_mr_tau_mf1'))
     with tau_mf_col2:
-        gmv_mimo_q02 = st.number_input(
-            '$Q_2(z^{-1})$', value=0.9, step=0.1, min_value=0.0, max_value=100.0, key='gmv_mr_tau_mf2')
-
+        gmv_mimo_q02 = float(st.text_input('$Q_2(z^{-1})$', value="1.0", key='gmv_mr_tau_mf2'))
+        
     if st.button('Receber Dados', type='primary', key='gmv_mimo_setpoint_button'):
             
             

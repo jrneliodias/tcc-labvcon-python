@@ -282,11 +282,11 @@ def gpc_mimo_tab_form():
     ny_col,nu_col,lambda_col = st.columns(3)
     
     with ny_col:   
-        gpc_mimo_ny_1 = st.number_input('$N_{y1}$', value=1, step=1, min_value=0, key='gpc_mimo_ny_1')
-        gpc_mimo_ny_2 = st.number_input('$N_{y2}$', value=1, step=1, min_value=0, key='gpc_mimo_ny_2')
+        gpc_mimo_ny_1 = st.number_input('$N_{y_1}$', value=1, step=1, min_value=0, key='gpc_mimo_ny_1')
+        gpc_mimo_ny_2 = st.number_input('$N_{y_2}$', value=1, step=1, min_value=0, key='gpc_mimo_ny_2')
     with nu_col:   
-        gpc_mimo_nu_1 = st.number_input('$N_{u1}$', value=1, step=1, min_value=0, key='gpc_mimo_nu_1')
-        gpc_mimo_nu_2 = st.number_input('$N_{u2}$', value=1, step=1, min_value=0, key='gpc_mimo_nu_2')
+        gpc_mimo_nu_1 = st.number_input('$N_{u_1}$', value=1, step=1, min_value=0, key='gpc_mimo_nu_1')
+        gpc_mimo_nu_2 = st.number_input('$N_{u_2}$', value=1, step=1, min_value=0, key='gpc_mimo_nu_2')
     with lambda_col:   
         gpc_mimo_lambda_1 = st.number_input('$\lambda_{1}$', value=1.0, step=0.1, min_value=0.0, key='gpc_mimo_lambda_1')
         gpc_mimo_lambda_2 = st.number_input('$\lambda_{2}$', value=1.0, step=0.1, min_value=0.0, key='gpc_mimo_lambda_2')
