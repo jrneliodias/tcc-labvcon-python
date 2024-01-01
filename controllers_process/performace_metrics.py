@@ -19,6 +19,6 @@ def total_variation_control(control_signal:str)->float:
    
     control_signal_dict  = get_session_variable(control_signal).values()
     control_signal_values = np.array(list(control_signal_dict))
-    control_variation = np.diff(control_signal_values)
+    control_variation = np.abs(np.diff(control_signal_values))
     total_control_variation = np.sum(control_variation)
     return total_control_variation
