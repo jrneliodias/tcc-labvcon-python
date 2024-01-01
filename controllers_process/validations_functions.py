@@ -162,11 +162,11 @@ def tvc1_validation():
     st.session_state.controller_parameters['tvc_1_metric'] = total_variation_control_1
      
     if not get_session_variable('control_signal_2'):
-        return st.metric('Total Variation Control 1 (TVC)', f'{total_variation_control_1:.2f}',delta=f'{delta_tvc1:.3f}')
+        return st.metric('Total Variation Control 1 (TVC)', f'{total_variation_control_1:.2f}',delta=f'{delta_tvc1:.3f}',delta_color='inverse')
     previous_tvc2= get_session_variable('tvc_2_metric')
     total_variation_control_2 = total_variation_control('control_signal_2')
     delta_tvc2 = total_variation_control_2-previous_tvc2
     st.session_state.controller_parameters['tvc_2_metric'] = total_variation_control_1
     
-    return st.metric('Total Variation Control 1 (TVC)', f'{total_variation_control_1:.2f}',delta=f'{delta_tvc1:.3f}'), \
-           st.metric('Total Variation Control 2 (TVC)', f'{total_variation_control_2:.2f}',delta=f'{delta_tvc2:.3f}')
+    return st.metric('Total Variation Control 1 (TVC)', f'{total_variation_control_1:.2f}',delta=f'{delta_tvc1:.3f}',delta_color='inverse'), \
+           st.metric('Total Variation Control 2 (TVC)', f'{total_variation_control_2:.2f}',delta=f'{delta_tvc2:.3f}',delta_color='inverse')
