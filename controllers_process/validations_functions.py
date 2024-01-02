@@ -149,7 +149,7 @@ def iae_metric_validation():
     delta_iae = iae_metric-previous_iae_metric
     st.session_state.controller_parameters['iae_metric'] = iae_metric
 
-    return st.metric('Integrated Absolute Error (IAE)', f'{iae_metric:.2f}',delta=f'{delta_iae:.3f}')
+    return st.metric('Integrated Absolute Error (IAE)', f'{iae_metric:.2f}',delta=f'{delta_iae:.3f}',delta_color='inverse')
     
 
 def tvc1_validation():
