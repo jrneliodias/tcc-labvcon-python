@@ -1,4 +1,4 @@
-# Projeto LABVCON v2.0
+# LABVCON v2.0
 
 ## Descrição
 
