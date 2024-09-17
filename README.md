@@ -47,3 +47,5 @@ Para instalar e começar a usar o LABVCON v2.0, siga estas etapas simples:
 ### LABVCON modo dark
 ![interface_light_mode](img/interface_gpc.png)
 
+### Video de demonstração
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/iYGOIkJjMlA/0.jpg)](https://www.youtube.com/watch?v=iYGOIkJjMlA)
